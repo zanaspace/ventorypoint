@@ -43,7 +43,7 @@ BEGIN
     (v_user_owner_b, 'owner_b@test3pl.com', 'Dave', 'OwnerB');
 
   -- Insert Organizations
-  INSERT INTO public.organizations (id, name, country, timezone, currency) VALUES
+  INSERT INTO public.organizations (id, name, country, timezone, default_currency) VALUES
     (v_org_a_id, 'Test 3PL Org A', 'US', 'America/Chicago', 'USD'),
     (v_org_b_id, 'Test 3PL Org B', 'US', 'America/New_York', 'USD');
 

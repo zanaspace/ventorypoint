@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { loginFloorWorker, logoutFloorWorker, type FloorWorkerSession } from "./actions";
+import { useDeviceId } from "@/lib/device-id";
 
 interface FloorTerminalClientProps {
   initialSession: FloorWorkerSession | null;
@@ -18,6 +19,7 @@ export function FloorTerminalClient({ initialSession }: FloorTerminalClientProps
   const [errorMsg, setErrorMsg] = useState("");
   const [isLocked, setIsLocked] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const deviceId = useDeviceId();
 
   const badgeInputRef = useRef<HTMLInputElement>(null);
   const pinInputRef = useRef<HTMLInputElement>(null);
@@ -109,7 +111,7 @@ export function FloorTerminalClient({ initialSession }: FloorTerminalClientProps
 
     startTransition(async () => {
       setErrorMsg("");
-      const res = await loginFloorWorker(badgeToken, currentPin);
+      const res = await loginFloorWorker(badgeToken, currentPin, deviceId);
 
       if (res.ok && res.session) {
         setSession(res.session);
@@ -138,9 +140,9 @@ export function FloorTerminalClient({ initialSession }: FloorTerminalClientProps
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between p-4 md:p-8 selection:bg-indigo-500 selection:text-white">
+    <div className="min-h-screen bg-gray-950 text-gray-100 flex flex-col justify-between p-4 md:p-8 selection:bg-purple-500 selection:text-white">
       {/* Header bar */}
-      <header className="flex items-center justify-between border-b border-slate-800 pb-4">
+      <header className="flex items-center justify-between border-b border-gray-800 pb-4">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center font-bold text-primary-foreground text-lg shadow-sm">
             VP
@@ -148,22 +150,22 @@ export function FloorTerminalClient({ initialSession }: FloorTerminalClientProps
           <div>
             <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
               VentoryPoint
-              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-800 text-gray-300 border border-gray-700">
                 Floor Terminal
               </span>
             </h1>
-            <p className="text-xs text-slate-400">Warehouse Worker Fast-Auth Station</p>
+            <p className="text-xs text-gray-400">Warehouse Worker Fast-Auth Station</p>
           </div>
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="hidden sm:flex items-center gap-2 text-xs text-slate-400 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg">
+          <div className="hidden sm:flex items-center gap-2 text-xs text-gray-400 bg-gray-900 border border-gray-800 px-3 py-1.5 rounded-lg">
             <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
             Scanner Ready
           </div>
           <Link
             href="/login"
-            className="text-xs font-medium text-slate-400 hover:text-white transition-colors bg-slate-900 hover:bg-slate-800 border border-slate-800 px-3 py-1.5 rounded-lg"
+            className="text-xs font-medium text-gray-400 hover:text-white transition-colors bg-gray-900 hover:bg-gray-800 border border-gray-800 px-3 py-1.5 rounded-lg"
           >
             Management Login →
           </Link>
@@ -175,7 +177,7 @@ export function FloorTerminalClient({ initialSession }: FloorTerminalClientProps
         <div className="w-full max-w-md">
           {session ? (
             /* Active Worker Station View */
-            <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl backdrop-blur-sm space-y-6 text-center animate-in fade-in zoom-in-95 duration-200">
+            <div className="bg-gray-900/90 border border-gray-800 rounded-2xl p-6 sm:p-8 shadow-2xl backdrop-blur-sm space-y-6 text-center animate-in fade-in zoom-in-95 duration-200">
               <div className="mx-auto w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
                 <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
@@ -189,30 +191,64 @@ export function FloorTerminalClient({ initialSession }: FloorTerminalClientProps
                 <h2 className="text-2xl font-bold text-white mt-3">
                   {session.first_name} {session.last_name}
                 </h2>
-                <p className="text-sm font-mono text-indigo-400 mt-1">{session.worker_code}</p>
-                <p className="text-xs text-slate-400 mt-1">{session.organization_name}</p>
+                <p className="text-sm font-mono text-purple-400 mt-1">{session.worker_code}</p>
+                <p className="text-xs text-gray-400 mt-1">{session.organization_name}</p>
               </div>
 
-              <div className="bg-slate-950 border border-slate-800/80 rounded-xl p-4 text-left space-y-2 text-xs">
-                <div className="flex justify-between text-slate-400">
+              <div className="bg-gray-950 border border-gray-800/80 rounded-xl p-4 text-left space-y-2 text-xs">
+                <div className="flex justify-between text-gray-400">
                   <span>Sign-in Time:</span>
-                  <span className="font-medium text-slate-200 font-mono">
+                  <span className="font-medium text-gray-200 font-mono">
                     {new Date(session.login_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                   </span>
                 </div>
-                <div className="flex justify-between text-slate-400">
+                <div className="flex justify-between text-gray-400">
                   <span>Facility Access:</span>
-                  <span className="font-medium text-slate-200">
+                  <span className="font-medium text-gray-200">
                     {session.all_facilities ? "All Facilities" : "Assigned Hubs"}
                   </span>
                 </div>
+                <div className="flex justify-between text-gray-400">
+                  <span>Terminal:</span>
+                  <span className="font-medium text-gray-200">
+                    {session.device ? session.device.name : "Not identified"}
+                  </span>
+                </div>
               </div>
+
+              {/* Floor events need an approved terminal assigned to a facility */}
+              {(!session.device || !session.device.is_authorized || !session.device.facility_id) && (
+                <div
+                  role="status"
+                  className="rounded-xl border border-amber-800/70 bg-amber-950/70 p-4 text-left text-amber-200"
+                >
+                  <p className="text-base font-semibold">
+                    {session.device?.is_blocked
+                      ? "This terminal has been blocked by a supervisor"
+                      : !session.device || !session.device.is_authorized
+                        ? "This terminal needs a supervisor's approval"
+                        : "This terminal isn't assigned to a facility"}
+                  </p>
+                  <p className="mt-1 text-sm">
+                    Ask a supervisor to open Devices in VentoryPoint
+                    {session.device ? (
+                      <>
+                        {" "}and {session.device.is_blocked ? "unblock" : "approve"}{" "}
+                        <span className="font-mono font-semibold">{session.device.name}</span>.
+                      </>
+                    ) : (
+                      "."
+                    )}{" "}
+                    You can&apos;t record scans from this terminal until then.
+                  </p>
+                </div>
+              )}
 
               <div className="space-y-3 pt-2">
                 <button
                   type="button"
                   onClick={() => alert("Floor Task Execution workspace begins in Phase 1 - Sprint 06!")}
-                  className="w-full py-3.5 px-4 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-sm shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full py-3.5 px-4 rounded-xl bg-primary hover:bg-primary-hover text-primary-foreground font-semibold text-sm shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -224,7 +260,7 @@ export function FloorTerminalClient({ initialSession }: FloorTerminalClientProps
                   type="button"
                   disabled={isPending}
                   onClick={handleSignOut}
-                  className="w-full py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-medium text-sm transition-all border border-slate-700"
+                  className="w-full py-3 px-4 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white font-medium text-sm transition-all border border-gray-700"
                 >
                   {isPending ? "Ending Shift..." : "End Shift / Sign Out"}
                 </button>
@@ -232,7 +268,7 @@ export function FloorTerminalClient({ initialSession }: FloorTerminalClientProps
             </div>
           ) : (
             /* Login Steps */
-            <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl backdrop-blur-sm space-y-6">
+            <div className="bg-gray-900/90 border border-gray-800 rounded-2xl p-6 sm:p-8 shadow-2xl backdrop-blur-sm space-y-6">
               {/* Error banner */}
               {errorMsg && (
                 <div
@@ -253,13 +289,13 @@ export function FloorTerminalClient({ initialSession }: FloorTerminalClientProps
                 /* Step 1: Badge Entry / Scan */
                 <div className="space-y-6">
                   <div className="text-center space-y-2">
-                    <div className="mx-auto w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                    <div className="mx-auto w-14 h-14 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
                       <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
                       </svg>
                     </div>
                     <h2 className="text-xl font-bold text-white">Scan Employee Badge</h2>
-                    <p className="text-xs text-slate-400">
+                    <p className="text-xs text-gray-400">
                       Point hardware scanner at badge QR / barcode, or type badge token below.
                     </p>
                   </div>
@@ -272,11 +308,11 @@ export function FloorTerminalClient({ initialSession }: FloorTerminalClientProps
                         placeholder="Scan or type badge token (e.g. vp_badge_...)"
                         value={badgeToken}
                         onChange={(e) => setBadgeToken(e.target.value)}
-                        className="w-full px-4 py-3.5 rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-mono tracking-wide"
+                        className="w-full px-4 py-3.5 rounded-xl bg-gray-950 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm font-mono tracking-wide"
                         autoComplete="off"
                         autoFocus
                       />
-                      <div className="absolute right-3 top-3.5 text-xs text-slate-500 uppercase tracking-wider font-semibold pointer-events-none">
+                      <div className="absolute right-3 top-3.5 text-xs text-gray-500 uppercase tracking-wider font-semibold pointer-events-none">
                         Badge ID
                       </div>
                     </div>
@@ -284,7 +320,7 @@ export function FloorTerminalClient({ initialSession }: FloorTerminalClientProps
                     <button
                       type="submit"
                       disabled={!badgeToken.trim()}
-                      className="w-full py-3.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold text-sm transition-all shadow-lg shadow-indigo-600/20"
+                      className="w-full py-3.5 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-semibold text-sm transition-all shadow-lg shadow-purple-600/20"
                     >
                       Continue to PIN →
                     </button>
@@ -301,18 +337,18 @@ export function FloorTerminalClient({ initialSession }: FloorTerminalClientProps
                         setPin("");
                         setErrorMsg("");
                       }}
-                      className="text-xs text-slate-400 hover:text-white flex items-center gap-1 transition-colors"
+                      className="text-xs text-gray-400 hover:text-white flex items-center gap-1 transition-colors"
                     >
                       ← Change Badge
                     </button>
-                    <span className="text-xs font-mono text-indigo-400 truncate max-w-[180px]">
+                    <span className="text-xs font-mono text-purple-400 truncate max-w-[180px]">
                       {badgeToken}
                     </span>
                   </div>
 
                   <div className="text-center space-y-1">
                     <h2 className="text-xl font-bold text-white">Enter Security PIN</h2>
-                    <p className="text-xs text-slate-400">Enter your 4 to 6 digit numerical PIN</p>
+                    <p className="text-xs text-gray-400">Enter your 4 to 6 digit numerical PIN</p>
                   </div>
 
                   {/* PIN Display Dots */}
@@ -322,8 +358,8 @@ export function FloorTerminalClient({ initialSession }: FloorTerminalClientProps
                         key={idx}
                         className={`h-4 w-4 rounded-full border-2 transition-all duration-150 ${
                           pin.length > idx
-                            ? "bg-indigo-500 border-indigo-400 scale-110 shadow-md shadow-indigo-500/50"
-                            : "border-slate-700 bg-slate-950"
+                            ? "bg-purple-500 border-purple-400 scale-110 shadow-md shadow-purple-500/50"
+                            : "border-gray-700 bg-gray-950"
                         }`}
                       />
                     ))}
@@ -360,7 +396,7 @@ export function FloorTerminalClient({ initialSession }: FloorTerminalClientProps
                         type="button"
                         onClick={() => handleKeypadPress(num)}
                         disabled={isPending || isLocked}
-                        className="h-14 rounded-xl bg-slate-800/80 hover:bg-slate-700 active:scale-95 text-xl font-semibold text-white border border-slate-700/80 shadow-sm transition-all flex items-center justify-center cursor-pointer select-none"
+                        className="h-14 rounded-xl bg-gray-800/80 hover:bg-gray-700 active:scale-95 text-xl font-semibold text-white border border-gray-700/80 shadow-sm transition-all flex items-center justify-center cursor-pointer select-none"
                       >
                         {num}
                       </button>
@@ -370,7 +406,7 @@ export function FloorTerminalClient({ initialSession }: FloorTerminalClientProps
                       type="button"
                       onClick={() => handleKeypadPress("clear")}
                       disabled={isPending || isLocked || pin.length === 0}
-                      className="h-14 rounded-xl bg-slate-900 hover:bg-slate-800 active:scale-95 text-xs font-semibold text-slate-400 hover:text-white border border-slate-800 transition-all flex items-center justify-center cursor-pointer select-none"
+                      className="h-14 rounded-xl bg-gray-900 hover:bg-gray-800 active:scale-95 text-xs font-semibold text-gray-400 hover:text-white border border-gray-800 transition-all flex items-center justify-center cursor-pointer select-none"
                     >
                       CLEAR
                     </button>
@@ -379,7 +415,7 @@ export function FloorTerminalClient({ initialSession }: FloorTerminalClientProps
                       type="button"
                       onClick={() => handleKeypadPress("0")}
                       disabled={isPending || isLocked}
-                      className="h-14 rounded-xl bg-slate-800/80 hover:bg-slate-700 active:scale-95 text-xl font-semibold text-white border border-slate-700/80 shadow-sm transition-all flex items-center justify-center cursor-pointer select-none"
+                      className="h-14 rounded-xl bg-gray-800/80 hover:bg-gray-700 active:scale-95 text-xl font-semibold text-white border border-gray-700/80 shadow-sm transition-all flex items-center justify-center cursor-pointer select-none"
                     >
                       0
                     </button>
@@ -388,7 +424,7 @@ export function FloorTerminalClient({ initialSession }: FloorTerminalClientProps
                       type="button"
                       onClick={() => handleKeypadPress("backspace")}
                       disabled={isPending || isLocked || pin.length === 0}
-                      className="h-14 rounded-xl bg-slate-900 hover:bg-slate-800 active:scale-95 text-slate-300 hover:text-white border border-slate-800 transition-all flex items-center justify-center cursor-pointer select-none"
+                      className="h-14 rounded-xl bg-gray-900 hover:bg-gray-800 active:scale-95 text-gray-300 hover:text-white border border-gray-800 transition-all flex items-center justify-center cursor-pointer select-none"
                       aria-label="Backspace"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -401,7 +437,7 @@ export function FloorTerminalClient({ initialSession }: FloorTerminalClientProps
                     type="button"
                     onClick={() => executeLogin()}
                     disabled={isPending || isLocked || pin.length < 4}
-                    className="w-full py-3.5 px-4 rounded-xl bg-primary hover:bg-primary/90 disabled:opacity-40 text-primary-foreground font-semibold text-sm transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full py-3.5 px-4 rounded-xl bg-primary hover:bg-primary-hover disabled:opacity-40 text-primary-foreground font-semibold text-sm transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
                   >
                     {isPending ? (
                       <>
@@ -420,7 +456,7 @@ export function FloorTerminalClient({ initialSession }: FloorTerminalClientProps
       </main>
 
       {/* Footer */}
-      <footer className="text-center text-xs text-slate-500 py-2 border-t border-slate-900">
+      <footer className="text-center text-xs text-gray-500 py-2 border-t border-gray-900">
         VentoryPoint 3PL Cloud Terminal • Fast Shift Entry • Lockout Protection Active
       </footer>
     </div>
