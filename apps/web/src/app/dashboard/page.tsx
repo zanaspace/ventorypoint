@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import type { LucideIcon } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import { getActiveWorkspaceContext } from "@/lib/org-context";
 import {
@@ -9,10 +10,100 @@ import {
   Plus,
   ArrowRight,
   Warehouse,
-  CheckCircle2,
-  Clock,
-  ChevronRight,
+  MapPin,
+  Zap,
+  UserPlus,
 } from "lucide-react";
+
+// Greeting + date in the organization's timezone (falls back to UTC if the zone is invalid)
+function getGreeting(timezone: string) {
+  const now = new Date();
+  let hour = now.getUTCHours();
+  let dateLabel = now.toLocaleDateString("en-US", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
+  try {
+    hour = Number(new Intl.DateTimeFormat("en-US", { hour: "numeric", hourCycle: "h23", timeZone: timezone }).format(now));
+    dateLabel = now.toLocaleDateString("en-US", { weekday: "long", day: "numeric", month: "long", timeZone: timezone });
+  } catch {
+    // keep UTC values
+  }
+  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  return { greeting, dateLabel };
+}
+
+interface StatTileProps {
+  href: string;
+  label: string;
+  value: number;
+  unit: string;
+  cta: string;
+  icon: LucideIcon;
+  hero?: boolean;
+}
+
+function StatTile({ href, label, value, unit, cta, icon: Icon, hero }: StatTileProps) {
+  return (
+    <Link
+      href={href}
+      className={`group relative overflow-hidden rounded-xl p-5 transition-shadow duration-200 ${
+        hero
+          ? "bg-gradient-brand text-white hover:shadow-glow"
+          : "bg-card border border-border hover:border-purple-200 hover:shadow-float dark:hover:border-purple-800"
+      }`}
+    >
+      {hero && (
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-10 -top-10 size-40 rounded-full bg-[radial-gradient(circle,rgba(118,111,255,0.45),transparent_65%)]"
+        />
+      )}
+      <div className="relative flex items-center justify-between">
+        <span className={`text-sm font-medium ${hero ? "text-purple-200" : "text-muted-foreground"}`}>{label}</span>
+        <span
+          className={`grid size-9 place-items-center rounded-lg ${
+            hero ? "bg-white/10 text-white" : "bg-accent text-brand-text"
+          }`}
+        >
+          <Icon className="size-[18px]" strokeWidth={1.5} />
+        </span>
+      </div>
+      <div className="relative mt-4 flex items-baseline gap-2">
+        <span className={`font-heading text-3xl font-medium tracking-tight tabular-nums ${hero ? "text-white" : "text-card-foreground"}`}>
+          {value}
+        </span>
+        <span className={`text-xs ${hero ? "text-purple-200" : "text-muted-foreground"}`}>{unit}</span>
+      </div>
+      <div
+        className={`relative mt-4 flex items-center gap-1 text-xs font-semibold ${
+          hero ? "text-white" : "text-brand-text"
+        }`}
+      >
+        <span>{cta}</span>
+        <ArrowRight className="size-3.5 transition-transform duration-150 group-hover:translate-x-0.5" />
+      </div>
+    </Link>
+  );
+}
+
+const quickActions = [
+  {
+    href: "/dashboard/facilities",
+    icon: MapPin,
+    title: "Manage facilities & geocoding",
+    description: "Configure operating hours, carrier cutoffs and addresses",
+  },
+  {
+    href: "/dashboard/clients",
+    icon: Users,
+    title: "Client account assignments",
+    description: "Assign brand clients to serving facilities",
+  },
+  {
+    href: "/dashboard/members",
+    icon: ShieldCheck,
+    title: "Staff & floor workers",
+    description: "Invite teammates, create floor worker badges and manage roles",
+  },
+];
 
 export default async function DashboardPage() {
   const context = await getActiveWorkspaceContext();
@@ -37,243 +128,187 @@ export default async function DashboardPage() {
   ]);
 
   const canManage = ["owner", "admin", "ops_manager"].includes(context.role);
+  const timezone = context.activeOrg.timezone || "UTC";
+  const { greeting, dateLabel } = getGreeting(timezone);
+  const firstName = context.user?.firstName;
 
   return (
-    <div className="flex flex-col gap-6 max-w-7xl mx-auto">
-      {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border pb-5">
+    <div className="flex flex-col gap-8 max-w-7xl mx-auto">
+      {/* Greeting */}
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            Dashboard
+          <h1 className="font-heading text-3xl font-medium tracking-tight text-foreground">
+            {greeting}
+            {firstName ? (
+              <>
+                , <span className="text-brand-text">{firstName}</span>
+              </>
+            ) : null}
           </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {context.activeOrg.name} &bull; Timezone: {context.activeOrg.timezone || "UTC"} &bull; Role:{" "}
-            <span className="capitalize font-medium text-foreground">
-              {context.role.replace("_", " ")}
-            </span>
+          <p className="mt-1.5 text-sm text-muted-foreground">
+            <span className="font-semibold text-foreground">{context.activeOrg.name}</span>
+            {" · "}
+            <span className="font-semibold text-brand-text">{facilitiesCount ?? 0} facilities</span>
+            {" and "}
+            <span className="font-semibold text-brand-text">{floorWorkersCount ?? 0} floor workers</span>
+            {" · "}
+            <span className="capitalize">{context.role.replace("_", " ")}</span>
           </p>
         </div>
 
-        {canManage && (
-          <div className="flex items-center gap-2.5">
-            <Link
-              href="/dashboard/facilities"
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold shadow-sm transition-colors"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Add Facility</span>
-            </Link>
-            <Link
-              href="/dashboard/members"
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-border bg-background hover:bg-surface text-foreground text-xs font-semibold transition-colors"
-            >
-              <span>Invite Member</span>
-            </Link>
-          </div>
-        )}
+        <div className="flex flex-wrap items-center gap-2.5">
+          <span className="inline-flex h-9 items-center rounded-full border border-border bg-card px-4 text-sm font-medium text-muted-foreground">
+            {dateLabel}
+          </span>
+          {canManage && (
+            <>
+              <Link
+                href="/dashboard/members"
+                className="inline-flex h-9 items-center gap-1.5 rounded-md border border-input px-3.5 text-sm font-semibold text-foreground transition-colors hover:border-brand hover:bg-brand hover:text-white"
+              >
+                <UserPlus className="size-4" strokeWidth={1.5} />
+                <span>Invite member</span>
+              </Link>
+              <Link
+                href="/dashboard/facilities"
+                className="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
+              >
+                <Plus className="size-4" />
+                <span>Add facility</span>
+              </Link>
+            </>
+          )}
+        </div>
       </div>
 
-      {/* KPI Stats Grid */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {/* Facilities KPI */}
-        <Link
-          href="/dashboard/facilities"
-          className="group bg-card border border-border hover:border-border/80 rounded-xl p-5 shadow-sm transition-all"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Warehouses
-            </span>
-            <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-muted-foreground">
-              <Building2 className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-3xl font-bold text-card-foreground">
-              {facilitiesCount ?? 0}
-            </span>
-            <span className="text-xs text-muted-foreground">Active Facilities</span>
-          </div>
-          <div className="mt-3 text-xs text-muted-foreground group-hover:text-foreground font-medium flex items-center gap-1 transition-colors">
-            <span>Manage facilities</span>
-            <ChevronRight className="w-3.5 h-3.5" />
-          </div>
-        </Link>
+      {/* KPI tiles */}
+      <section aria-labelledby="overview-heading" className="flex flex-col gap-3">
+        <h2 id="overview-heading" className="eyebrow">01 · Workspace overview</h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatTile
+            hero
+            href="/dashboard/facilities"
+            label="Warehouses"
+            value={facilitiesCount ?? 0}
+            unit="active facilities"
+            cta="Manage facilities"
+            icon={Building2}
+          />
+          <StatTile
+            href="/dashboard/clients"
+            label="Client accounts"
+            value={clientsCount ?? 0}
+            unit="brands"
+            cta="View clients"
+            icon={Users}
+          />
+          <StatTile
+            href="/dashboard/members"
+            label="Team members"
+            value={membersCount ?? 0}
+            unit="active staff"
+            cta="Manage permissions"
+            icon={ShieldCheck}
+          />
+          <StatTile
+            href="/dashboard/members"
+            label="Floor workers"
+            value={floorWorkersCount ?? 0}
+            unit="badge accounts"
+            cta="Manage badges & PINs"
+            icon={Warehouse}
+          />
+        </div>
+      </section>
 
-        {/* Client Accounts KPI */}
-        <Link
-          href="/dashboard/clients"
-          className="group bg-card border border-border hover:border-border/80 rounded-xl p-5 shadow-sm transition-all"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Client Accounts
-            </span>
-            <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-muted-foreground">
-              <Users className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-3xl font-bold text-card-foreground">
-              {clientsCount ?? 0}
-            </span>
-            <span className="text-xs text-muted-foreground">Brands</span>
-          </div>
-          <div className="mt-3 text-xs text-muted-foreground group-hover:text-foreground font-medium flex items-center gap-1 transition-colors">
-            <span>View client accounts</span>
-            <ChevronRight className="w-3.5 h-3.5" />
-          </div>
-        </Link>
-
-        {/* Members & Staff KPI */}
-        <Link
-          href="/dashboard/members"
-          className="group bg-card border border-border hover:border-border/80 rounded-xl p-5 shadow-sm transition-all"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Team Members
-            </span>
-            <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-muted-foreground">
-              <ShieldCheck className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-3xl font-bold text-card-foreground">
-              {membersCount ?? 0}
-            </span>
-            <span className="text-xs text-muted-foreground">Active Staff</span>
-          </div>
-          <div className="mt-3 text-xs text-muted-foreground group-hover:text-foreground font-medium flex items-center gap-1 transition-colors">
-            <span>Manage permissions</span>
-            <ChevronRight className="w-3.5 h-3.5" />
-          </div>
-        </Link>
-
-        {/* Floor Workers KPI */}
-        <Link
-          href="/dashboard/members"
-          className="group bg-card border border-border hover:border-border/80 rounded-xl p-5 shadow-sm transition-all"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Floor Workers
-            </span>
-            <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-muted-foreground">
-              <Warehouse className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-3xl font-bold text-card-foreground">
-              {floorWorkersCount ?? 0}
-            </span>
-            <span className="text-xs text-muted-foreground">Badge Accounts</span>
-          </div>
-          <div className="mt-3 text-xs text-muted-foreground group-hover:text-foreground font-medium flex items-center gap-1 transition-colors">
-            <span>Manage badges & PINs</span>
-            <ChevronRight className="w-3.5 h-3.5" />
-          </div>
-        </Link>
-      </div>
-
-      {/* Main Content Split */}
+      {/* Facilities + quick actions */}
       <div className="grid gap-6 md:grid-cols-2">
-        {/* Facilities List */}
-        <div className="bg-card border border-border rounded-xl p-5 shadow-sm space-y-4">
-          <div className="flex items-center justify-between border-b border-border pb-3">
-            <div className="flex items-center gap-2.5">
-              <Building2 className="w-4 h-4 text-muted-foreground" />
-              <h2 className="text-sm font-semibold text-card-foreground">Warehouse Facilities</h2>
+        <section aria-labelledby="facilities-heading" className="bg-card border border-border rounded-xl">
+          <div className="flex items-center justify-between border-b border-border px-5 py-4">
+            <div className="flex items-center gap-3">
+              <span className="grid size-8 place-items-center rounded-lg bg-accent text-brand-text">
+                <Building2 className="size-4" strokeWidth={1.5} />
+              </span>
+              <h2 id="facilities-heading" className="font-heading text-lg font-medium text-card-foreground">
+                Warehouse facilities
+              </h2>
             </div>
             {canManage && (
               <Link
                 href="/dashboard/facilities"
-                className="text-xs font-medium text-muted-foreground hover:text-foreground"
+                className="inline-flex items-center gap-1 text-sm font-semibold text-brand-text hover:underline underline-offset-4"
               >
-                View all &rarr;
+                View all <ArrowRight className="size-3.5" />
               </Link>
             )}
           </div>
 
           {context.facilities.length === 0 ? (
-            <div className="py-8 text-center border border-dashed border-border rounded-lg">
-              <p className="text-xs text-muted-foreground">No facilities registered yet.</p>
+            <div className="px-5 py-10 text-center">
+              <span className="mx-auto mb-3 grid size-12 place-items-center rounded-xl bg-accent text-brand-text">
+                <Warehouse className="size-6" strokeWidth={1.5} />
+              </span>
+              <p className="font-heading text-base font-medium text-card-foreground">No facilities yet</p>
+              <p className="mt-1 text-sm text-muted-foreground">Add your first warehouse to start receiving inventory.</p>
               {canManage && (
                 <Link
                   href="/dashboard/facilities"
-                  className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                  className="mt-4 inline-flex h-8 items-center gap-1.5 rounded-md bg-primary px-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
                 >
-                  <Plus className="w-3 h-3" /> Add first facility
+                  <Plus className="size-3.5" /> Add facility
                 </Link>
               )}
             </div>
           ) : (
-            <div className="divide-y divide-border">
+            <ul className="divide-y divide-border">
               {context.facilities.slice(0, 5).map((f) => (
-                <div key={f.id} className="py-2.5 flex items-center justify-between text-xs">
-                  <div>
-                    <div className="font-medium text-card-foreground">{f.name}</div>
-                    <div className="text-muted-foreground text-[11px] font-mono">
-                      Code: {f.code} {f.city ? `• ${f.city}` : ""}
+                <li key={f.id} className="flex items-center justify-between gap-3 px-5 py-3">
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-semibold text-card-foreground">{f.name}</div>
+                    <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
+                      <span className="rounded border border-border px-1.5 py-px font-mono font-semibold text-foreground">{f.code}</span>
+                      {f.city && <span>{f.city}</span>}
                     </div>
                   </div>
-                  <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground">
+                  <span className="inline-flex h-6 items-center gap-1.5 rounded-full bg-success-soft px-2.5 text-xs font-semibold text-success-text">
+                    <span className="size-1.5 rounded-full bg-success" aria-hidden="true" />
                     Active
                   </span>
-                </div>
+                </li>
               ))}
-            </div>
+            </ul>
           )}
-        </div>
+        </section>
 
-        {/* Quick Links & Information */}
-        <div className="bg-card border border-border rounded-xl p-5 shadow-sm space-y-4">
-          <div className="flex items-center gap-2.5 border-b border-border pb-3">
-            <Clock className="w-4 h-4 text-muted-foreground" />
-            <h2 className="text-sm font-semibold text-card-foreground">Quick Actions</h2>
+        <section aria-labelledby="actions-heading" className="bg-card border border-border rounded-xl">
+          <div className="flex items-center gap-3 border-b border-border px-5 py-4">
+            <span className="grid size-8 place-items-center rounded-lg bg-accent text-brand-text">
+              <Zap className="size-4" strokeWidth={1.5} />
+            </span>
+            <h2 id="actions-heading" className="font-heading text-lg font-medium text-card-foreground">
+              Quick actions
+            </h2>
           </div>
 
-          <div className="grid grid-cols-1 gap-2 text-xs">
-            <Link
-              href="/dashboard/facilities"
-              className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors"
-            >
-              <div>
-                <div className="font-medium text-card-foreground">Manage Facilities & Geocoding</div>
-                <div className="text-muted-foreground text-[11px]">
-                  Configure operating hours, carrier cutoffs, and addresses
+          <div className="flex flex-col gap-2 p-3">
+            {quickActions.map(({ href, icon: Icon, title, description }) => (
+              <Link
+                key={title}
+                href={href}
+                className="group flex items-center gap-3 rounded-lg p-3 transition-colors hover:bg-accent"
+              >
+                <span className="grid size-9 shrink-0 place-items-center rounded-lg border border-border bg-card text-muted-foreground transition-colors group-hover:border-purple-200 group-hover:text-brand-text dark:group-hover:border-purple-800">
+                  <Icon className="size-[18px]" strokeWidth={1.5} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-semibold text-card-foreground">{title}</div>
+                  <div className="text-xs text-muted-foreground">{description}</div>
                 </div>
-              </div>
-              <ArrowRight className="w-4 h-4 text-muted-foreground" />
-            </Link>
-
-            <Link
-              href="/dashboard/clients"
-              className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors"
-            >
-              <div>
-                <div className="font-medium text-card-foreground">Client Account Assignments</div>
-                <div className="text-muted-foreground text-[11px]">
-                  Assign brand clients to serving facilities
-                </div>
-              </div>
-              <ArrowRight className="w-4 h-4 text-muted-foreground" />
-            </Link>
-
-            <Link
-              href="/dashboard/members"
-              className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors"
-            >
-              <div>
-                <div className="font-medium text-card-foreground">Staff & Floor Workers</div>
-                <div className="text-muted-foreground text-[11px]">
-                  Invite teammates, create floor worker badges, and manage roles
-                </div>
-              </div>
-              <ArrowRight className="w-4 h-4 text-muted-foreground" />
-            </Link>
+                <ArrowRight className="size-4 text-muted-foreground transition-transform duration-150 group-hover:translate-x-0.5 group-hover:text-brand-text" />
+              </Link>
+            ))}
           </div>
-        </div>
+        </section>
       </div>
     </div>
   );

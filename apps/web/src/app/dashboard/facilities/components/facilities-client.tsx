@@ -272,7 +272,7 @@ export function FacilitiesClient({
         </div>
         <button 
           onClick={openCreateModal}
-          className="flex items-center gap-2 bg-brand text-white px-4 py-2 rounded-lg font-medium hover:bg-brand/90 transition-colors shadow-sm cursor-pointer"
+          className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:bg-primary-hover transition-colors shadow-sm cursor-pointer"
         >
           <Plus className="w-5 h-5" />
           Add Facility
@@ -324,7 +324,7 @@ export function FacilitiesClient({
                 paginatedFacilities.map((facility) => (
                   <tr key={facility.id} className="hover:bg-gray-50/50 dark:hover:bg-white/5 transition-colors">
                     <td className="px-6 py-4 font-medium text-gray-900 dark:text-gray-100 flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-md bg-purple-50 dark:bg-brand/10 flex items-center justify-center text-brand">
+                      <div className="w-8 h-8 rounded-md bg-accent flex items-center justify-center text-brand-text">
                         <Building className="w-4 h-4" />
                       </div>
                       {facility.name}
@@ -347,11 +347,11 @@ export function FacilitiesClient({
                         </div>
                         {facility.latitude !== null && facility.geocode_status !== 'unverified' ? (
                           <span title={facility.geocode_status === 'verified' ? 'Address verified' : 'Pin set manually'}>
-                            <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
+                            <CheckCircle2 className="w-4 h-4 text-success shrink-0" />
                           </span>
                         ) : facility.address ? (
                           <span title="Address not verified. Edit the facility and verify it.">
-                            <AlertTriangle className="w-4 h-4 text-yellow-500 shrink-0" />
+                            <AlertTriangle className="w-4 h-4 text-warning shrink-0" />
                           </span>
                         ) : null}
                       </div>
@@ -557,7 +557,7 @@ export function FacilitiesClient({
                   Pin in the wrong spot? Adjust the coordinates and the map updates.
                 </p>
                 {geo.geocode_status === "unverified" && address.trim() && (
-                  <p className="flex items-center gap-1.5 text-xs text-yellow-600 dark:text-yellow-400">
+                  <p className="flex items-center gap-1.5 text-xs text-warning-text">
                     <AlertTriangle className="w-3.5 h-3.5" />
                     This address is unverified and will be flagged until you verify it.
                   </p>
@@ -607,7 +607,7 @@ export function FacilitiesClient({
                   <button
                     type="button"
                     onClick={() => setCutoffs([...cutoffs, { carrier: "", time: "16:00" }])}
-                    className="flex items-center gap-1 text-xs font-medium text-brand hover:underline cursor-pointer"
+                    className="flex items-center gap-1 text-xs font-medium text-brand-text hover:underline cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5" /> Add cutoff
                   </button>
@@ -633,7 +633,7 @@ export function FacilitiesClient({
                         <button
                           type="button"
                           onClick={() => setCutoffs(cutoffs.filter((_, j) => j !== i))}
-                          className="p-2 text-gray-400 hover:text-red-500 cursor-pointer"
+                          className="p-2 text-gray-400 hover:text-destructive cursor-pointer"
                           title="Remove"
                         >
                           <X className="w-4 h-4" />
@@ -656,7 +656,7 @@ export function FacilitiesClient({
                 <button 
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-4 py-2 text-sm font-medium bg-brand text-white hover:bg-brand/90 rounded-md transition-colors disabled:opacity-50 cursor-pointer"
+                  className="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary-hover rounded-md transition-colors disabled:opacity-50 cursor-pointer"
                 >
                   {isSubmitting ? (editingFacility ? "Saving..." : "Creating...") : (editingFacility ? "Save Changes" : "Create Facility")}
                 </button>

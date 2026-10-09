@@ -47,7 +47,7 @@ export default function JoinPage() {
           </p>
         </CardContent>
         <CardFooter className="justify-center">
-          <Link href="/login" className="text-sm text-primary font-medium hover:underline">
+          <Link href="/login" className="text-sm text-brand-text font-medium hover:underline">
             Back to sign in
           </Link>
         </CardFooter>

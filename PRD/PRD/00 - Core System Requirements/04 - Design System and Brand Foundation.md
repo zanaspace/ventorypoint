@@ -32,7 +32,7 @@ White-label rule
 In the merchant portal the 3PL's brand leads (logo, colours, domain). The platform brand appears only in an optional 'Powered by' footer.
 
 2. Colour Tokens
-Adapted from the Rillet design reference (Document 11): a purple primary, deep violet-to-purple gradient sections, zinc neutrals and green for success. Machine-readable tokens are in brand-tokens/ (tokens.css, tailwind.brand.js, tokens.json).
+Adapted from the Rillet design reference (Document 11): a purple primary (also the primary button fill), deep violet-to-purple gradient sections, zinc neutrals and green for success. Machine-readable tokens are in brand-tokens/ (tokens.css, tailwind.brand.js, tokens.json).
 2.1 Brand palette
 Swatch
 Token
@@ -41,7 +41,7 @@ Usage
  
 purple-600 (brand primary)
 #582EFD
-Links, focus rings, hover state of primary buttons, key highlights
+Primary buttons, links, focus rings, key highlights
  
 purple-500
 #644EFF
@@ -77,7 +77,7 @@ Soft borders on violet surfaces
  
 black
 #000000
-Primary button background (turns purple-600 on hover)
+Pure black (marketing type on light sections; not used for buttons)
 
 
 2.2 Neutrals (zinc scale)
@@ -229,7 +229,7 @@ Elevation: mostly flat with 1px zinc borders. Cards/popovers use 0 24px 48px -12
 Motion: 120–200ms ease-out for UI. Floor success flash 150ms. No decorative motion on the floor. Respect prefers-reduced-motion.
 Touch targets: ≥44px admin/portal, ≥56px floor mode.
 Icons: Lucide, 16/20/24px, 1.5px stroke (line icons, matching the reference's clean line style). Floor icons 32–48px.
-Buttons: primary = black fill + white text, hover purple-600. Secondary = transparent + zinc-300 border, hover purple-600 fill. On dark sections, primary inverts (white fill, black text, hover purple-600). Link buttons are purple-600 text with an arrow (→).
+Buttons: primary = purple-600 fill + white text, hover purple-700 (#4C22E0), in both light and dark mode. Secondary = transparent + zinc-300 border, hover purple-600 fill. On dark gradient sections (marketing), primary inverts to white fill + black text, hover purple-600, so it stays visible against purple. Link buttons are purple-600 text with an arrow (→).
 Layout: max container widths 1210 / 1330 / 1440px, 56px desktop gutters, section spacing 120–160px (marketing), numbered eyebrow above every marketing section headline.
 5. Component Library (packages/ui)
 Group

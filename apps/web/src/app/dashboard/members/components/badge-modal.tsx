@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import { Modal } from "@/components/ui/modal";
-import { Printer, Hexagon, Shield, Copy, Check } from "lucide-react";
+import { Printer, Shield, Copy, Check } from "lucide-react";
+import { BrandMark } from "@/components/brand-mark";
 import { toast } from "sonner";
 
 interface BadgeModalProps {
@@ -60,8 +61,8 @@ export function BadgeModal({ isOpen, onClose, worker }: BadgeModalProps) {
         {/* Printable Badge Area */}
         <div id="printable-badge" className="mx-auto w-72 rounded-2xl border-2 border-border bg-white text-zinc-900 shadow-lg p-5 flex flex-col items-center gap-4 text-center">
           {/* Header */}
-          <div className="flex items-center gap-2 text-brand">
-            <Hexagon className="w-6 h-6 fill-brand text-brand" />
+          <div className="flex items-center gap-2">
+            <BrandMark className="size-6 rounded-md" />
             <span className="font-bold tracking-tight text-sm text-zinc-900 uppercase">
               {worker.org_name || "VentoryPoint"}
             </span>
@@ -74,7 +75,7 @@ export function BadgeModal({ isOpen, onClose, worker }: BadgeModalProps) {
             <div className="text-xl font-bold tracking-tight text-zinc-900">
               {fullName}
             </div>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 mt-1 rounded-full text-xs font-semibold bg-purple-50 text-brand border border-purple-200">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 mt-1 rounded-full text-xs font-semibold bg-purple-50 text-purple-600 border border-purple-200">
               <Shield className="w-3 h-3" />
               Floor Worker
             </div>
@@ -109,7 +110,7 @@ export function BadgeModal({ isOpen, onClose, worker }: BadgeModalProps) {
             onClick={handleCopyToken}
             className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium border border-border rounded-md hover:bg-gray-50 dark:hover:bg-white/10 transition-colors cursor-pointer"
           >
-            {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+            {copied ? <Check className="w-3.5 h-3.5 text-success" /> : <Copy className="w-3.5 h-3.5" />}
             Copy Token
           </button>
 
@@ -117,7 +118,7 @@ export function BadgeModal({ isOpen, onClose, worker }: BadgeModalProps) {
             <button
               type="button"
               onClick={handlePrint}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-brand text-white hover:bg-brand/90 rounded-md transition-colors shadow-xs cursor-pointer"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary-hover rounded-md transition-colors shadow-xs cursor-pointer"
             >
               <Printer className="w-4 h-4" />
               Print Badge Card

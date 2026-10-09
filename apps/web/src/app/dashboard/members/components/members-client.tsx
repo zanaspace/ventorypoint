@@ -399,7 +399,7 @@ export function MembersClient({
             }}
             className="flex items-center gap-2 border border-border bg-background hover:bg-gray-50 dark:hover:bg-white/10 text-gray-800 dark:text-gray-200 px-3.5 py-2 rounded-lg font-medium transition-colors shadow-xs cursor-pointer"
           >
-            <UserPlus className="w-4 h-4 text-brand" />
+            <UserPlus className="w-4 h-4 text-brand-text" />
             Add Floor Worker
           </button>
           <button
@@ -407,7 +407,7 @@ export function MembersClient({
               resetForm();
               setIsModalOpen(true);
             }}
-            className="flex items-center gap-2 bg-brand text-white px-4 py-2 rounded-lg font-medium hover:bg-brand/90 transition-colors shadow-xs cursor-pointer"
+            className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:bg-primary-hover transition-colors shadow-xs cursor-pointer"
           >
             <Plus className="w-5 h-5" />
             Invite Member
@@ -469,7 +469,7 @@ export function MembersClient({
                         ? [
                             {
                               label: "View Badge Card",
-                              icon: <QrCode className="w-4 h-4 text-brand" />,
+                              icon: <QrCode className="w-4 h-4 text-brand-text" />,
                               onClick: () =>
                                 setActiveBadgeModal({
                                   worker_code: member.credential!.worker_code,
@@ -553,7 +553,7 @@ export function MembersClient({
                                 {member.profiles?.first_name} {member.profiles?.last_name}
                                 {isSelf && <span className="text-xs text-muted-foreground">(you)</span>}
                                 {member.credential?.worker_code && (
-                                  <span className="font-mono text-xs px-1.5 py-0.5 rounded bg-purple-50 dark:bg-brand/10 text-brand font-semibold">
+                                  <span className="font-mono text-xs px-1.5 py-0.5 rounded bg-accent text-brand-text font-semibold">
                                     {member.credential.worker_code}
                                   </span>
                                 )}
@@ -593,10 +593,10 @@ export function MembersClient({
                           <span
                             className={`px-2.5 py-1 rounded-full text-xs font-medium ${
                               member.pending_approval
-                                ? "bg-yellow-50 dark:bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-500/20"
+                                ? "bg-warning-soft text-warning-text border border-warning/30"
                                 : member.is_active
-                                ? "bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-500/20"
-                                : "bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-500/20"
+                                ? "bg-success-soft text-success-text border border-success/25"
+                                : "bg-danger-soft text-danger-text border border-destructive/25"
                             }`}
                           >
                             {member.pending_approval ? "Pending approval" : member.is_active ? "Active" : "Revoked"}
@@ -660,7 +660,7 @@ export function MembersClient({
                 <div key={invite.id} className="p-3 border border-border rounded-lg bg-surface flex flex-col gap-2">
                   <div className="flex justify-between items-start gap-2">
                     <div>
-                      <div className="font-mono font-bold text-brand tracking-widest text-lg">
+                      <div className="font-mono font-bold text-brand-text tracking-widest text-lg">
                         ••••-{invite.code_hint ?? "????"}
                       </div>
                       <div className="text-[11px] text-muted-foreground">Full code is shown only once, when created</div>
@@ -668,18 +668,18 @@ export function MembersClient({
                     <div className="flex items-center">
                       <button
                         onClick={() => copy(inviteLink(invite.token), `link-${invite.id}`, "Invite link copied!")}
-                        className="text-gray-400 hover:text-brand transition-colors cursor-pointer p-1"
+                        className="text-gray-400 hover:text-brand-text transition-colors cursor-pointer p-1"
                         title="Copy invite link"
                       >
                         {copiedKey === `link-${invite.id}` ? (
-                          <Check className="w-4 h-4 text-green-500" />
+                          <Check className="w-4 h-4 text-success" />
                         ) : (
                           <LinkIcon className="w-4 h-4" />
                         )}
                       </button>
                       <button
                         onClick={() => handleRevokeInvite(invite.id)}
-                        className="text-gray-400 hover:text-red-500 transition-colors cursor-pointer p-1"
+                        className="text-gray-400 hover:text-destructive transition-colors cursor-pointer p-1"
                         title="Revoke invitation"
                       >
                         <Ban className="w-4 h-4" />
@@ -687,7 +687,7 @@ export function MembersClient({
                     </div>
                   </div>
                   <div className="flex justify-between items-center text-xs text-muted-foreground mt-1">
-                    <span className="capitalize bg-purple-50 dark:bg-brand/10 text-brand px-2 py-0.5 rounded-md font-medium">
+                    <span className="capitalize bg-accent text-brand-text px-2 py-0.5 rounded-md font-medium">
                       {roleLabel(invite.role)}
                     </span>
                     <span>
@@ -835,7 +835,7 @@ export function MembersClient({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-4 py-2 text-sm font-medium bg-brand text-white hover:bg-brand/90 rounded-md transition-colors disabled:opacity-50 cursor-pointer shadow-xs"
+              className="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary-hover rounded-md transition-colors disabled:opacity-50 cursor-pointer shadow-xs"
             >
               {isSubmitting ? "Creating..." : "Create Worker & Badge"}
             </button>
@@ -889,7 +889,7 @@ export function MembersClient({
             <button
               type="submit"
               disabled={isSubmitting || newPinValue.length < 4}
-              className="px-4 py-2 text-sm font-medium bg-brand text-white hover:bg-brand/90 rounded-md transition-colors disabled:opacity-50 cursor-pointer"
+              className="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary-hover rounded-md transition-colors disabled:opacity-50 cursor-pointer"
             >
               {isSubmitting ? "Updating..." : "Update PIN"}
             </button>
@@ -1040,7 +1040,7 @@ export function MembersClient({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-4 py-2 text-sm font-medium bg-brand text-white hover:bg-brand/90 rounded-md transition-colors disabled:opacity-50 cursor-pointer"
+              className="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary-hover rounded-md transition-colors disabled:opacity-50 cursor-pointer"
             >
               {isSubmitting ? "Generating..." : "Generate Code"}
             </button>
@@ -1056,26 +1056,26 @@ export function MembersClient({
               Copy this code now. For security only a hash is stored, so it can&apos;t be shown again.
             </p>
             <div className="flex items-center justify-between gap-3 p-4 rounded-lg border border-border bg-surface">
-              <span className="font-mono font-bold text-brand tracking-widest text-2xl">{createdInvite.code}</span>
+              <span className="font-mono font-bold text-brand-text tracking-widest text-2xl">{createdInvite.code}</span>
               <button
                 onClick={() => copy(createdInvite.code, "created-code", "Invite code copied!")}
-                className="p-2 rounded-md text-gray-500 hover:text-brand hover:bg-gray-100 dark:hover:bg-white/10 cursor-pointer"
+                className="p-2 rounded-md text-gray-500 hover:text-brand-text hover:bg-gray-100 dark:hover:bg-white/10 cursor-pointer"
                 title="Copy code"
               >
-                {copiedKey === "created-code" ? <Check className="w-5 h-5 text-green-500" /> : <Copy className="w-5 h-5" />}
+                {copiedKey === "created-code" ? <Check className="w-5 h-5 text-success" /> : <Copy className="w-5 h-5" />}
               </button>
             </div>
             <button
               onClick={() => copy(inviteLink(createdInvite.token), "created-link", "Invite link copied!")}
               className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium border border-border rounded-md hover:bg-gray-50 dark:hover:bg-white/10 cursor-pointer"
             >
-              {copiedKey === "created-link" ? <Check className="w-4 h-4 text-green-500" /> : <LinkIcon className="w-4 h-4" />}
+              {copiedKey === "created-link" ? <Check className="w-4 h-4 text-success" /> : <LinkIcon className="w-4 h-4" />}
               Copy shareable link instead
             </button>
             <div className="flex justify-end">
               <button
                 onClick={() => setCreatedInvite(null)}
-                className="px-4 py-2 text-sm font-medium bg-brand text-white hover:bg-brand/90 rounded-md cursor-pointer"
+                className="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary-hover rounded-md cursor-pointer"
               >
                 Done
               </button>

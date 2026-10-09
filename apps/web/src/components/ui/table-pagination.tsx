@@ -1,6 +1,9 @@
 "use client";
 
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
+import { SearchableSelect } from "./searchable-select";
+
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100].map((n) => ({ value: String(n), label: String(n) }));
 
 interface TablePaginationProps {
   currentPage: number;
@@ -38,17 +41,17 @@ export function TablePagination({
   return (
     <div className="flex items-center justify-between mt-4 text-sm text-gray-500 dark:text-gray-400 px-2">
       <div className="flex items-center gap-2">
-        <span>Per page</span>
-        <select 
-          value={itemsPerPage}
-          onChange={(e) => onItemsPerPageChange(Number(e.target.value))}
-          className="bg-transparent border border-border rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-brand text-gray-900 dark:text-gray-100"
-        >
-          <option value={10}>10</option>
-          <option value={20}>20</option>
-          <option value={50}>50</option>
-          <option value={100}>100</option>
-        </select>
+        <span>Rows per page</span>
+        <div className="w-[4.5rem]">
+          <SearchableSelect
+            size="sm"
+            searchable={false}
+            aria-label="Rows per page"
+            value={String(itemsPerPage)}
+            onChange={(v) => onItemsPerPageChange(Number(v))}
+            options={PAGE_SIZE_OPTIONS}
+          />
+        </div>
       </div>
 
       <div className="flex items-center gap-1">
@@ -74,8 +77,8 @@ export function TablePagination({
               onClick={() => onPageChange(pageNum)}
               className={`min-w-[28px] h-7 flex items-center justify-center rounded-md cursor-pointer transition-colors ${
                 currentPage === pageNum 
-                  ? 'bg-gray-200 dark:bg-white/10 text-gray-900 dark:text-white font-medium' 
-                  : 'hover:bg-gray-100 dark:hover:bg-white/5'
+                  ? 'border border-input bg-card text-brand-text font-bold shadow-xs' 
+                  : 'hover:bg-accent hover:text-accent-foreground'
               }`}
             >
               {pageNum}

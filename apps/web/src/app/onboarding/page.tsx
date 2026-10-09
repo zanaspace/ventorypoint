@@ -94,7 +94,7 @@ export default async function OnboardingPage() {
                 </div>
                 <button
                   type="submit"
-                  className="inline-flex h-9 items-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 cursor-pointer"
+                  className="inline-flex h-9 items-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary-hover cursor-pointer"
                 >
                   Join
                 </button>
@@ -137,7 +137,7 @@ export default async function OnboardingPage() {
 
             <button
               type="submit"
-              className="inline-flex h-10 w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 cursor-pointer"
+              className="inline-flex h-10 w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-hover cursor-pointer"
             >
               Create Organization
             </button>
@@ -145,7 +145,7 @@ export default async function OnboardingPage() {
 
           <div className="text-center text-sm text-muted-foreground">
             Joining a team instead?{" "}
-            <Link href="/join" className="text-primary font-medium hover:underline">
+            <Link href="/join" className="text-brand-text font-medium hover:underline">
               Enter an invite code
             </Link>
           </div>

@@ -43,8 +43,18 @@ export function WorkspaceSwitcher({
         setFacilityOpen(false);
       }
     }
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setOrgOpen(false);
+        setFacilityOpen(false);
+      }
+    }
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
   }, []);
 
   const handleSelectOrg = (orgId: string) => {
@@ -95,39 +105,35 @@ export function WorkspaceSwitcher({
         <button
           type="button"
           disabled={isPending}
+          aria-haspopup="listbox"
+          aria-expanded={orgOpen}
           onClick={() => {
             setOrgOpen(!orgOpen);
             setFacilityOpen(false);
           }}
-          className="w-full flex items-center justify-between p-2 rounded-lg bg-surface hover:bg-surface-hover border border-border text-left transition-colors group cursor-pointer"
+          className="dropdown-trigger h-auto py-2 px-2 bg-surface"
         >
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-7 h-7 rounded-lg bg-brand/10 border border-brand/20 flex items-center justify-center text-brand font-bold text-xs shrink-0">
-              <Building2 className="w-4 h-4 text-brand" />
+            <div className="w-7 h-7 rounded-lg bg-accent border border-brand/20 flex items-center justify-center text-brand-text font-bold text-xs shrink-0">
+              <Building2 className="w-4 h-4 text-brand-text" />
             </div>
             <div className="min-w-0 flex-1">
               <div className="text-xs font-semibold text-foreground truncate">
                 {activeOrg?.name || "Select Org"}
               </div>
               <div className="text-[10px] text-muted-foreground capitalize flex items-center gap-1">
-                <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-success"></span>
                 {activeOrg?.role?.replace("_", " ") || "Member"}
               </div>
             </div>
           </div>
-          <ChevronDown
-            className={`w-3.5 h-3.5 text-muted-foreground transition-transform duration-200 shrink-0 ${
-              orgOpen ? "rotate-180" : ""
-            }`}
-          />
+          <ChevronDown className="dropdown-chevron size-3.5" strokeWidth={1.5} />
         </button>
 
         {orgOpen && (
-          <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-background border border-border rounded-xl shadow-xl py-1.5 animate-in fade-in zoom-in-95 duration-150">
-            <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-              Your Workspaces
-            </div>
-            <div className="max-h-48 overflow-y-auto py-1">
+          <div className="dropdown-panel absolute left-0 right-0 top-full mt-1 z-50" role="listbox" aria-label="Workspaces">
+            <div className="dropdown-label">Your workspaces</div>
+            <div className="dropdown-list max-h-48">
               {organizations.map((org) => {
                 const isSelected = org.id === activeOrg?.id;
                 return (
@@ -135,30 +141,31 @@ export function WorkspaceSwitcher({
                     key={org.id}
                     type="button"
                     onClick={() => handleSelectOrg(org.id)}
-                    className={`w-full flex items-center justify-between px-2.5 py-2 text-xs text-left hover:bg-surface-hover transition-colors ${
-                      isSelected ? "text-brand font-semibold bg-brand/5" : "text-foreground"
-                    }`}
+                    role="option"
+                    aria-selected={isSelected}
+                    className="dropdown-item"
                   >
                     <div className="min-w-0 flex-1">
                       <div className="truncate">{org.name}</div>
-                      <div className="text-[10px] text-muted-foreground capitalize">
+                      <div className="text-xs font-normal text-muted-foreground capitalize">
                         {org.role.replace("_", " ")}
                       </div>
                     </div>
-                    {isSelected && <Check className="w-3.5 h-3.5 text-brand shrink-0" />}
+                    {isSelected && <Check className="dropdown-check" strokeWidth={2} />}
                   </button>
                 );
               })}
             </div>
 
-            <div className="border-t border-border mt-1 pt-1 px-1">
+            <div className="dropdown-separator" />
+            <div>
               <Link
                 href="/onboarding"
                 onClick={() => setOrgOpen(false)}
-                className="flex items-center gap-2 w-full px-2 py-1.5 rounded-md text-xs font-medium text-brand hover:bg-brand/10 transition-colors"
+                className="dropdown-item font-medium text-brand-text"
               >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Create New Organization</span>
+                <Plus strokeWidth={1.5} />
+                <span>Create new organization</span>
               </Link>
             </div>
           </div>
@@ -170,47 +177,47 @@ export function WorkspaceSwitcher({
         <button
           type="button"
           disabled={isPending || facilities.length === 0}
+          aria-haspopup="listbox"
+          aria-expanded={facilityOpen}
           onClick={() => {
             setFacilityOpen(!facilityOpen);
             setOrgOpen(false);
           }}
-          className="w-full flex items-center justify-between px-2 py-1.5 rounded-lg bg-background hover:bg-surface border border-border/70 text-left transition-colors group cursor-pointer"
+          className="dropdown-trigger h-9 px-2"
+          data-size="sm"
         >
           <div className="flex items-center gap-2 min-w-0">
-            <Warehouse className="w-3.5 h-3.5 text-brand/70 shrink-0" />
+            <Warehouse className="w-3.5 h-3.5 text-brand-text shrink-0" />
             <div className="text-[11px] font-medium text-foreground truncate">
               {activeFacility ? `${activeFacility.name} (${activeFacility.code})` : "All Facilities (HQ)"}
             </div>
           </div>
-          <ChevronDown
-            className={`w-3 h-3 text-muted-foreground transition-transform duration-200 shrink-0 ${
-              facilityOpen ? "rotate-180" : ""
-            }`}
-          />
+          <ChevronDown className="dropdown-chevron size-3.5" strokeWidth={1.5} />
         </button>
 
         {facilityOpen && (
-          <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-background border border-border rounded-xl shadow-xl py-1.5 animate-in fade-in zoom-in-95 duration-150">
-            <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
-              <span>Facility Scope</span>
-              <span className="text-[9px] font-normal">{facilities.length} active</span>
+          <div className="dropdown-panel absolute left-0 right-0 top-full mt-1 z-50" role="listbox" aria-label="Facility scope">
+            <div className="dropdown-label flex items-center justify-between">
+              <span>Facility scope</span>
+              <span className="font-medium normal-case tracking-normal">{facilities.length} active</span>
             </div>
 
             <button
               type="button"
               onClick={() => handleSelectFacility("all")}
-              className={`w-full flex items-center justify-between px-2.5 py-1.5 text-xs text-left hover:bg-surface-hover transition-colors ${
-                activeFacilityId === "all" ? "text-brand font-semibold bg-brand/5" : "text-foreground"
-              }`}
+              role="option"
+              aria-selected={activeFacilityId === "all"}
+              className="dropdown-item"
             >
               <div className="flex items-center gap-2 min-w-0">
-                <Globe className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                <Globe strokeWidth={1.5} />
                 <span className="truncate">All Facilities (HQ Overview)</span>
               </div>
-              {activeFacilityId === "all" && <Check className="w-3.5 h-3.5 text-brand shrink-0" />}
+              {activeFacilityId === "all" && <Check className="dropdown-check" strokeWidth={2} />}
             </button>
 
-            <div className="max-h-40 overflow-y-auto py-1 border-t border-border/50">
+            <div className="dropdown-separator" />
+            <div className="dropdown-list max-h-40">
               {facilities.map((fac) => {
                 const isSelected = fac.id === activeFacilityId;
                 return (
@@ -218,17 +225,17 @@ export function WorkspaceSwitcher({
                     key={fac.id}
                     type="button"
                     onClick={() => handleSelectFacility(fac.id)}
-                    className={`w-full flex items-center justify-between px-2.5 py-1.5 text-xs text-left hover:bg-surface-hover transition-colors ${
-                      isSelected ? "text-brand font-semibold bg-brand/5" : "text-foreground"
-                    }`}
+                    role="option"
+                    aria-selected={isSelected}
+                    className="dropdown-item"
                   >
                     <div className="min-w-0 flex-1 pr-2">
                       <div className="truncate">{fac.name}</div>
-                      <div className="text-[10px] text-muted-foreground">
-                        {fac.code} {fac.city ? `• ${fac.city}` : ""}
+                              <div className="text-xs font-normal text-muted-foreground">
+                        <span className="font-mono">{fac.code}</span> {fac.city ? `• ${fac.city}` : ""}
                       </div>
                     </div>
-                    {isSelected && <Check className="w-3.5 h-3.5 text-brand shrink-0" />}
+                    {isSelected && <Check className="dropdown-check" strokeWidth={2} />}
                   </button>
                 );
               })}

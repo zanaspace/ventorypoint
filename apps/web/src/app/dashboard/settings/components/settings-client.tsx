@@ -3,6 +3,18 @@
 import { useState, useTransition } from "react";
 import { Building2, Globe, Clock, DollarSign, Copy, Check, ShieldAlert, Save } from "lucide-react";
 import { updateOrganizationSettings } from "../actions";
+import { SearchableSelect } from "@/components/ui/searchable-select";
+
+const COUNTRY_OPTIONS = [
+  { value: "US", label: "United States (US)" },
+  { value: "CA", label: "Canada (CA)" },
+  { value: "GB", label: "United Kingdom (GB)" },
+  { value: "AU", label: "Australia (AU)" },
+  { value: "DE", label: "Germany (DE)" },
+  { value: "FR", label: "France (FR)" },
+  { value: "NL", label: "Netherlands (NL)" },
+  { value: "SG", label: "Singapore (SG)" },
+];
 
 interface SettingsClientProps {
   organization: {
@@ -88,8 +100,8 @@ export function SettingsClient({ organization, userRole }: SettingsClientProps) 
         <div
           className={`p-4 rounded-xl text-sm font-medium border flex items-center justify-between animate-in fade-in duration-150 ${
             feedback.type === "success"
-              ? "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300"
-              : "bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-800 text-red-800 dark:text-red-300"
+              ? "bg-success-soft border-success/30 text-success-text"
+              : "bg-danger-soft border-destructive/30 text-danger-text"
           }`}
         >
           <span>{feedback.message}</span>
@@ -109,7 +121,7 @@ export function SettingsClient({ organization, userRole }: SettingsClientProps) 
         <div className="bg-background border border-border rounded-xl p-6 shadow-sm space-y-5">
           <div className="flex items-center justify-between border-b border-border pb-4">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-brand/10 border border-brand/20 flex items-center justify-center text-brand">
+              <div className="w-9 h-9 rounded-lg bg-accent border border-brand/20 flex items-center justify-center text-brand-text">
                 <Building2 className="w-5 h-5" />
               </div>
               <div>
@@ -125,13 +137,13 @@ export function SettingsClient({ organization, userRole }: SettingsClientProps) 
               <button
                 type="button"
                 onClick={handleCopyOrgId}
-                className="text-xs flex items-center gap-1 text-brand hover:text-brand/80 px-2 py-1 rounded-md hover:bg-brand/5 border border-transparent hover:border-brand/20 transition-all cursor-pointer"
+                className="text-xs flex items-center gap-1 text-brand-text hover:text-accent-foreground px-2 py-1 rounded-md hover:bg-accent border border-transparent hover:border-brand/20 transition-all cursor-pointer"
                 title="Copy Full Organization ID"
               >
                 {copiedId ? (
                   <>
-                    <Check className="w-3.5 h-3.5 text-emerald-500" />
-                    <span className="text-emerald-600 font-medium">Copied</span>
+                    <Check className="w-3.5 h-3.5 text-success" />
+                    <span className="text-success-text font-medium">Copied</span>
                   </>
                 ) : (
                   <>
@@ -146,7 +158,7 @@ export function SettingsClient({ organization, userRole }: SettingsClientProps) 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-foreground">
-                Organization Legal Name <span className="text-red-500">*</span>
+                Organization Legal Name <span className="text-danger-text">*</span>
               </label>
               <input
                 type="text"
@@ -159,25 +171,17 @@ export function SettingsClient({ organization, userRole }: SettingsClientProps) 
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+              <label id="settings-country-label" className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                 <Globe className="w-3.5 h-3.5 text-muted-foreground" />
                 Country Code
               </label>
-              <select
+              <SearchableSelect
                 name="country"
+                aria-labelledby="settings-country-label"
                 defaultValue={organization.country || "US"}
                 disabled={!canEdit || isPending}
-                className="w-full px-3 py-2 text-sm rounded-lg bg-surface border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-brand disabled:opacity-60"
-              >
-                <option value="US">United States (US)</option>
-                <option value="CA">Canada (CA)</option>
-                <option value="GB">United Kingdom (GB)</option>
-                <option value="AU">Australia (AU)</option>
-                <option value="DE">Germany (DE)</option>
-                <option value="FR">France (FR)</option>
-                <option value="NL">Netherlands (NL)</option>
-                <option value="SG">Singapore (SG)</option>
-              </select>
+                options={COUNTRY_OPTIONS}
+              />
             </div>
           </div>
         </div>
@@ -185,7 +189,7 @@ export function SettingsClient({ organization, userRole }: SettingsClientProps) 
         {/* Card: Localization & Defaults */}
         <div className="bg-background border border-border rounded-xl p-6 shadow-sm space-y-5">
           <div className="flex items-center gap-3 border-b border-border pb-4">
-            <div className="w-9 h-9 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-500">
+            <div className="w-9 h-9 rounded-lg bg-accent border border-brand/20 flex items-center justify-center text-brand-text">
               <Clock className="w-5 h-5" />
             </div>
             <div>
@@ -196,41 +200,31 @@ export function SettingsClient({ organization, userRole }: SettingsClientProps) 
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+              <label id="settings-timezone-label" className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-muted-foreground" />
                 Default Operational Timezone
               </label>
-              <select
+              <SearchableSelect
                 name="timezone"
+                aria-labelledby="settings-timezone-label"
                 defaultValue={organization.timezone || "America/New_York"}
                 disabled={!canEdit || isPending}
-                className="w-full px-3 py-2 text-sm rounded-lg bg-surface border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-brand disabled:opacity-60"
-              >
-                {COMMON_TIMEZONES.map((tz) => (
-                  <option key={tz} value={tz}>
-                    {tz}
-                  </option>
-                ))}
-              </select>
+                options={COMMON_TIMEZONES.map((tz) => ({ value: tz, label: tz }))}
+              />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+              <label id="settings-currency-label" className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                 <DollarSign className="w-3.5 h-3.5 text-muted-foreground" />
                 Base Currency
               </label>
-              <select
+              <SearchableSelect
                 name="currency"
+                aria-labelledby="settings-currency-label"
                 defaultValue={organization.currency || "USD"}
                 disabled={!canEdit || isPending}
-                className="w-full px-3 py-2 text-sm rounded-lg bg-surface border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-brand disabled:opacity-60"
-              >
-                {COMMON_CURRENCIES.map((c) => (
-                  <option key={c.code} value={c.code}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
+                options={COMMON_CURRENCIES.map((c) => ({ value: c.code, label: c.label }))}
+              />
             </div>
           </div>
 
@@ -245,7 +239,7 @@ export function SettingsClient({ organization, userRole }: SettingsClientProps) 
             <button
               type="submit"
               disabled={isPending}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-brand hover:bg-brand/90 text-white font-semibold text-sm shadow-md transition-all disabled:opacity-50 cursor-pointer"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary hover:bg-primary-hover text-primary-foreground font-semibold text-sm shadow-md transition-all disabled:opacity-50 cursor-pointer"
             >
               {isPending ? (
                 <>
@@ -265,14 +259,14 @@ export function SettingsClient({ organization, userRole }: SettingsClientProps) 
 
       {/* Danger Zone */}
       {userRole === "owner" && (
-        <div className="bg-red-50/50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 rounded-xl p-6 shadow-sm space-y-4">
+        <div className="bg-danger-soft border border-destructive/25 rounded-xl p-6 shadow-sm space-y-4">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-600 dark:text-red-400">
+            <div className="w-9 h-9 rounded-lg bg-destructive/10 border border-destructive/20 flex items-center justify-center text-danger-text">
               <ShieldAlert className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-semibold text-red-900 dark:text-red-300">Danger Zone</h2>
-              <p className="text-xs text-red-700/70 dark:text-red-400/70">
+              <h2 className="text-base font-semibold text-danger-text">Danger Zone</h2>
+              <p className="text-xs text-muted-foreground">
                 Critical actions affecting all members and 3PL operational data
               </p>
             </div>
@@ -288,7 +282,7 @@ export function SettingsClient({ organization, userRole }: SettingsClientProps) 
             <button
               type="button"
               onClick={() => alert("Organization deletion requires multi-factor confirmation and no active client inventory.")}
-              className="px-3.5 py-2 text-xs font-semibold text-red-600 dark:text-red-400 bg-red-100/70 dark:bg-red-950 border border-red-300 dark:border-red-800 rounded-lg hover:bg-red-200 dark:hover:bg-red-900 transition-colors cursor-pointer"
+              className="px-3.5 py-2 text-xs font-semibold text-danger-text bg-card border border-destructive/40 rounded-md hover:bg-destructive hover:text-white hover:border-destructive transition-colors cursor-pointer"
             >
               Delete Organization
             </button>

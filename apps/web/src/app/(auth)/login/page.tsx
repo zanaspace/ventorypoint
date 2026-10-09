@@ -37,7 +37,7 @@ export default async function LoginPage(
               <Label htmlFor="password">Password</Label>
               <Link
                 href="/forgot-password"
-                className="text-sm font-medium text-primary hover:underline"
+                className="text-sm font-medium text-brand-text hover:underline"
               >
                 Forgot password?
               </Link>
@@ -133,7 +133,7 @@ export default async function LoginPage(
             href="/floor-login"
             className={buttonVariants({
               variant: "outline",
-              className: "w-full text-xs border-indigo-500/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40",
+              className: "w-full text-xs border-purple-500/30 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/40",
             })}
           >
             Floor Terminal 🏷️
@@ -145,7 +145,7 @@ export default async function LoginPage(
           Don&apos;t have an account?{" "}
           <Link
             href="/register"
-            className="text-primary font-medium hover:underline"
+            className="text-brand-text font-medium hover:underline"
           >
             Sign up
           </Link>

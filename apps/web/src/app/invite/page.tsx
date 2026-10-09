@@ -85,7 +85,7 @@ export default async function InvitePage(props: { searchParams: Promise<{ token?
         )}
 
         <CardFooter className="justify-center">
-          <Link href="/join" className="text-sm text-primary font-medium hover:underline">
+          <Link href="/join" className="text-sm text-brand-text font-medium hover:underline">
             Have a code instead?
           </Link>
         </CardFooter>

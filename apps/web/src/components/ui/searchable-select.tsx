@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, ChevronUp, Search } from "lucide-react";
+import { Check, ChevronDown, Search } from "lucide-react";
+import { useDropdownPosition } from "./use-dropdown-position";
 
 interface Option {
   label: string;
@@ -10,145 +11,240 @@ interface Option {
 }
 
 interface SearchableSelectProps {
-  name: string;
+  name?: string;
   options: Option[];
   value?: string;
   defaultValue?: string;
   onChange?: (value: string) => void;
   placeholder?: string;
   required?: boolean;
+  disabled?: boolean;
+  /** Show the search row. Defaults to true when there are more than 6 options. */
+  searchable?: boolean;
+  size?: "default" | "sm";
+  id?: string;
+  className?: string;
+  "aria-label"?: string;
+  "aria-labelledby"?: string;
 }
 
+/** Design-system select: used for every dropdown field in the app. */
 export function SearchableSelect({
   name,
   options,
   value,
   defaultValue,
   onChange,
-  placeholder = "Select Category",
+  placeholder = "Select an option",
   required = false,
+  disabled = false,
+  searchable,
+  size = "default",
+  id,
+  className,
+  "aria-label": ariaLabel,
+  "aria-labelledby": ariaLabelledBy,
 }: SearchableSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({});
-  
+  const [highlighted, setHighlighted] = useState(0);
   const [internalValue, setInternalValue] = useState(defaultValue || "");
   const currentValue = value !== undefined ? value : internalValue;
 
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const listboxId = useId();
 
-  useEffect(() => {
-    if (isOpen && dropdownRef.current) {
-      const rect = dropdownRef.current.getBoundingClientRect();
-      setMenuStyle({
-        position: 'fixed',
-        top: rect.bottom + 4,
-        left: rect.left,
-        width: rect.width,
-        zIndex: 9999
-      });
-    }
-  }, [isOpen]);
+  const showSearch = searchable ?? options.length > 6;
+  const { style, side } = useDropdownPosition(triggerRef, isOpen);
 
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      // If click is inside the trigger OR inside the menu, do nothing
-      if (dropdownRef.current?.contains(event.target as Node)) return;
-      if (menuRef.current?.contains(event.target as Node)) return;
-      
-      setIsOpen(false);
-    }
-    
-    function handleScroll(event: Event) {
-      if (menuRef.current?.contains(event.target as Node)) return;
-      setIsOpen(false);
-    }
-
-    if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-      window.addEventListener("scroll", handleScroll, true);
-      window.addEventListener("resize", handleScroll);
-    }
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      window.removeEventListener("scroll", handleScroll, true);
-      window.removeEventListener("resize", handleScroll);
-    };
-  }, [isOpen]);
-
-  const filteredOptions = options.filter(opt => 
-    opt.label.toLowerCase().includes(search.toLowerCase())
+  const filteredOptions = useMemo(
+    () => options.filter((opt) => opt.label.toLowerCase().includes(search.toLowerCase())),
+    [options, search]
   );
+  const selectedOption = options.find((opt) => opt.value === currentValue);
 
-  const selectedOption = options.find(opt => opt.value === currentValue);
+  function open() {
+    if (disabled) return;
+    const selectedIndex = options.findIndex((opt) => opt.value === currentValue);
+    setHighlighted(Math.max(0, selectedIndex));
+    setIsOpen(true);
+  }
 
-  const handleSelect = (val: string) => {
-    setInternalValue(val);
-    if (onChange) onChange(val);
+  function close(focusTrigger = true) {
     setIsOpen(false);
     setSearch("");
-  };
+    if (focusTrigger) triggerRef.current?.focus();
+  }
 
-  const menu = isOpen && typeof document !== "undefined" ? createPortal(
-    <div 
-      ref={menuRef}
-      style={menuStyle}
-      className="bg-white dark:bg-zinc-900 border border-border rounded-md shadow-lg overflow-hidden animate-in fade-in zoom-in-95 duration-100 flex flex-col"
-    >
-      <div className="p-2 border-b border-border flex items-center gap-2">
-        <Search className="w-4 h-4 text-gray-400" />
-        <input 
-          type="text"
-          placeholder="Search..."
-          className="w-full text-sm bg-transparent border-none focus:outline-none focus:ring-0 text-gray-900 dark:text-gray-100"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          autoFocus
-        />
-      </div>
-      <div className="max-h-60 overflow-y-auto p-1">
-        {filteredOptions.length === 0 ? (
-          <div className="px-3 py-3 text-sm text-gray-500 text-center">No results found</div>
-        ) : (
-          filteredOptions.map((opt) => (
+  function select(val: string) {
+    setInternalValue(val);
+    onChange?.(val);
+    close();
+  }
+
+  // Focus the search field (or the list) when the panel opens
+  useEffect(() => {
+    if (!isOpen) return;
+    const frame = requestAnimationFrame(() => (showSearch ? searchRef.current : listRef.current)?.focus());
+    return () => cancelAnimationFrame(frame);
+  }, [isOpen, showSearch]);
+
+  // Close on outside click
+  useEffect(() => {
+    if (!isOpen) return;
+    function handleClickOutside(event: MouseEvent) {
+      const target = event.target as Node;
+      if (triggerRef.current?.contains(target) || panelRef.current?.contains(target)) return;
+      close(false);
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen]);
+
+  // Keep the highlighted option in view
+  useEffect(() => {
+    if (!isOpen) return;
+    listRef.current?.querySelector<HTMLElement>(`[data-index="${highlighted}"]`)?.scrollIntoView({ block: "nearest" });
+  }, [highlighted, isOpen]);
+
+  function handleListKeyDown(event: React.KeyboardEvent) {
+    switch (event.key) {
+      case "ArrowDown":
+        event.preventDefault();
+        setHighlighted((i) => Math.min(i + 1, filteredOptions.length - 1));
+        break;
+      case "ArrowUp":
+        event.preventDefault();
+        setHighlighted((i) => Math.max(i - 1, 0));
+        break;
+      case "Home":
+        if (!showSearch) {
+          event.preventDefault();
+          setHighlighted(0);
+        }
+        break;
+      case "End":
+        if (!showSearch) {
+          event.preventDefault();
+          setHighlighted(filteredOptions.length - 1);
+        }
+        break;
+      case "Enter":
+        event.preventDefault();
+        if (filteredOptions[highlighted]) select(filteredOptions[highlighted].value);
+        break;
+      case "Escape":
+        event.preventDefault();
+        close();
+        break;
+      case "Tab":
+        close(false);
+        break;
+    }
+  }
+
+  function handleTriggerKeyDown(event: React.KeyboardEvent) {
+    if (["ArrowDown", "ArrowUp", "Enter", " "].includes(event.key)) {
+      event.preventDefault();
+      open();
+    }
+  }
+
+  const activeId = filteredOptions[highlighted] ? `${listboxId}-${highlighted}` : undefined;
+
+  const panel =
+    isOpen && typeof document !== "undefined"
+      ? createPortal(
+          <div ref={panelRef} style={style} data-side={side} className="dropdown-panel">
+            {showSearch && (
+              <div className="dropdown-search">
+                <Search className="size-4 shrink-0" strokeWidth={1.5} />
+                <input
+                  ref={searchRef}
+                  type="text"
+                  placeholder="Search"
+                  value={search}
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    setHighlighted(0);
+                  }}
+                  onKeyDown={handleListKeyDown}
+                  role="combobox"
+                  aria-expanded="true"
+                  aria-controls={listboxId}
+                  aria-activedescendant={activeId}
+                  aria-autocomplete="list"
+                  aria-label="Search options"
+                />
+              </div>
+            )}
             <div
-              key={opt.value}
-              className={`px-3 py-2 text-sm rounded-sm cursor-pointer transition-colors ${
-                currentValue === opt.value
-                  ? "bg-brand/10 text-brand font-medium"
-                  : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
-              }`}
-              onClick={() => handleSelect(opt.value)}
+              ref={listRef}
+              id={listboxId}
+              role="listbox"
+              tabIndex={showSearch ? -1 : 0}
+              aria-labelledby={ariaLabelledBy}
+              aria-label={ariaLabelledBy ? undefined : ariaLabel ?? placeholder}
+              aria-activedescendant={showSearch ? undefined : activeId}
+              onKeyDown={showSearch ? undefined : handleListKeyDown}
+              className="dropdown-list"
             >
-              {opt.label}
+              {filteredOptions.length === 0 ? (
+                <div className="dropdown-empty">No results found</div>
+              ) : (
+                filteredOptions.map((opt, index) => {
+                  const isSelected = opt.value === currentValue;
+                  return (
+                    <div
+                      key={opt.value}
+                      id={`${listboxId}-${index}`}
+                      data-index={index}
+                      role="option"
+                      aria-selected={isSelected}
+                      data-highlighted={index === highlighted ? "" : undefined}
+                      className="dropdown-item"
+                      onMouseEnter={() => setHighlighted(index)}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => select(opt.value)}
+                    >
+                      <span className="min-w-0 flex-1 truncate">{opt.label}</span>
+                      {isSelected && <Check className="dropdown-check" strokeWidth={2} />}
+                    </div>
+                  );
+                })
+              )}
             </div>
-          ))
-        )}
-      </div>
-    </div>,
-    document.body
-  ) : null;
+          </div>,
+          document.body
+        )
+      : null;
 
   return (
-    <div className="relative w-full" ref={dropdownRef}>
-      <input type="hidden" name={name} value={currentValue} required={required} />
-      
-      <div 
-        className="flex items-center justify-between w-full px-3 py-2 bg-white dark:bg-black/20 border border-border rounded-md cursor-pointer hover:border-gray-400 dark:hover:border-gray-600 transition-colors"
-        onClick={() => setIsOpen(!isOpen)}
+    <div className={`relative w-full ${className ?? ""}`}>
+      {name && <input type="hidden" name={name} value={currentValue} required={required} />}
+      <button
+        ref={triggerRef}
+        id={id}
+        type="button"
+        disabled={disabled}
+        data-size={size}
+        data-placeholder={selectedOption ? undefined : ""}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        aria-controls={isOpen ? listboxId : undefined}
+        aria-label={ariaLabel}
+        aria-labelledby={ariaLabelledBy}
+        className="dropdown-trigger"
+        onClick={() => (isOpen ? close() : open())}
+        onKeyDown={handleTriggerKeyDown}
       >
-        <span className={selectedOption ? "text-gray-900 dark:text-gray-100 text-sm" : "text-gray-500 dark:text-gray-400 text-sm"}>
-          {selectedOption ? selectedOption.label : placeholder}
-        </span>
-        {isOpen ? (
-          <ChevronUp className="w-4 h-4 text-gray-400" />
-        ) : (
-          <ChevronDown className="w-4 h-4 text-gray-400" />
-        )}
-      </div>
-      {menu}
+        <span className="dropdown-value">{selectedOption ? selectedOption.label : placeholder}</span>
+        <ChevronDown className="dropdown-chevron" strokeWidth={1.5} />
+      </button>
+      {panel}
     </div>
   );
 }

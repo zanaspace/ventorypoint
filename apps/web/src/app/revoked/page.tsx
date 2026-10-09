@@ -30,7 +30,7 @@ export default async function RevokedPage() {
       <div className="w-full max-w-md rounded-xl border border-border bg-background p-8 shadow-sm text-center space-y-5">
         <div
           className={`mx-auto flex h-14 w-14 items-center justify-center rounded-full ${
-            pending ? "bg-yellow-50 text-yellow-600 dark:bg-yellow-500/10" : "bg-red-50 text-red-600 dark:bg-red-500/10"
+            pending ? "bg-warning-soft text-warning-text" : "bg-danger-soft text-danger-text"
           }`}
         >
           {pending ? <Clock className="h-7 w-7" /> : <ShieldOff className="h-7 w-7" />}
@@ -53,7 +53,7 @@ export default async function RevokedPage() {
           <form action={signOut}>
             <button
               type="submit"
-              className="inline-flex h-10 w-full items-center justify-center rounded-md bg-primary text-sm font-medium text-primary-foreground hover:bg-primary/90 cursor-pointer"
+              className="inline-flex h-10 w-full items-center justify-center rounded-md bg-primary text-sm font-medium text-primary-foreground hover:bg-primary-hover cursor-pointer"
             >
               Sign out
             </button>
