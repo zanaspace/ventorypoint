@@ -1,4 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { after } from "next/server";
+import { createAdminClient } from "@/utils/supabase/admin";
+import { broadcastWarehouseEvents } from "./realtime-broadcast";
 
 /**
  * Typed wrappers over the Sprint 2 event write API (record_event / record_events /
@@ -55,6 +58,24 @@ function toError(error: { message: string; hint?: string | null }): EventResult 
   return { ok: false, code: (error.hint as EventErrorCode) || "error", message: error.message };
 }
 
+/**
+ * Live-update fast path: broadcast newly created events straight to Realtime once the
+ * response is sent (the database trigger remains the slower backup). Never affects the write.
+ */
+function publishLive(eventIds: string[]) {
+  if (eventIds.length === 0) return;
+  after(async () => {
+    try {
+      await broadcastWarehouseEvents(createAdminClient(), eventIds);
+    } catch (err) {
+      console.warn("Live broadcast skipped (trigger backup will deliver):", err instanceof Error ? err.message : err);
+    }
+  });
+}
+
+const createdIds = (results: BatchEventResult[]) =>
+  results.flatMap((r) => (r.status === "created" ? [r.event_id] : []));
+
 /** Records one event as the signed-in member. Safe to retry with the same idempotency_key. */
 export async function recordEvent(
   supabase: SupabaseClient,
@@ -77,6 +98,7 @@ export async function recordEvent(
     p_backdate_reason: event.backdate_reason ?? null,
   });
   if (error) return toError(error);
+  publishLive([data as string]); // a retried duplicate re-broadcasts harmlessly (clients de-duplicate)
   return { ok: true, eventId: data as string };
 }
 
@@ -91,6 +113,7 @@ export async function recordEvents(
     p_events: events,
   });
   if (error) return toError(error) as { ok: false; code: EventErrorCode; message: string };
+  publishLive(createdIds(data as BatchEventResult[]));
   return { ok: true, results: data as BatchEventResult[] };
 }
 
@@ -105,6 +128,7 @@ export async function recordFloorEvent(
     p_event: event,
   });
   if (error) return toError(error);
+  publishLive([data as string]); // a retried duplicate re-broadcasts harmlessly (clients de-duplicate)
   return { ok: true, eventId: data as string };
 }
 
@@ -119,5 +143,6 @@ export async function recordFloorEvents(
     p_events: events,
   });
   if (error) return toError(error) as { ok: false; code: EventErrorCode; message: string };
+  publishLive(createdIds(data as BatchEventResult[]));
   return { ok: true, results: data as BatchEventResult[] };
 }

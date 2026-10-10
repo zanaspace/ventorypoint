@@ -48,6 +48,11 @@ begin
     raise exception 'This suite needs Supabase Realtime (realtime.messages)';
   end if;
 
+  -- Isolate from any real backlog: set existing test_consumer work aside so the
+  -- claim/backoff tests only see this suite's deliveries (rolled back at the end).
+  update public.event_deliveries set status = 'succeeded', completed_at = now(), locked_until = null
+  where consumer = 'test_consumer' and status <> 'succeeded';
+
   -- ---------------------------------------------------------------
   -- Fixtures
   -- ---------------------------------------------------------------
@@ -411,6 +416,58 @@ begin
   reset role;
   if not v_blocked then raise exception 'TEST 10 FAILED: authenticated updated deliveries directly'; end if;
   raise notice '✓ TEST 10 PASSED: Claim/complete/fail are service_role only; deliveries not writable by users.';
+
+  -- ---------------------------------------------------------------
+  -- TEST 11: Batch acknowledgement and batch idempotency
+  -- ---------------------------------------------------------------
+  update public.event_deliveries set status = 'succeeded', completed_at = now(), locked_until = null
+  where consumer = 'test_consumer' and status <> 'succeeded';
+  perform set_config('request.jwt.claims', json_build_object('sub', v_owner_a, 'role', 'authenticated')::text, true);
+  set local role authenticated;
+  for v_i in 1 .. 10 loop
+    perform record_event(v_org_a, 'system.synthetic', 'bulk-key-' || lpad(v_i::text, 4, '0'), '{}', v_fac_a1);
+  end loop;
+  reset role;
+
+  set local role service_role;
+  select array_agg(c.delivery_id), array_agg(c.event_id) into v_row
+  from claim_event_deliveries('test_consumer', 'bulk-worker', 500) c;
+  reset role;
+
+  declare
+    v_deliveries uuid[];
+    v_events uuid[];
+    v_new uuid[];
+    v_done integer;
+  begin
+    select array_agg(d.id), array_agg(d.event_id) into v_deliveries, v_events
+    from public.event_deliveries d where d.consumer = 'test_consumer' and d.locked_by = 'bulk-worker' and d.status = 'processing';
+    if cardinality(v_deliveries) <> 10 then raise exception 'TEST 11 FAILED: expected 10 claimed, got %', cardinality(v_deliveries); end if;
+
+    set local role service_role;
+    -- First time: all 10 are new; second time: none
+    v_new := mark_events_processed('test_consumer', v_events);
+    if cardinality(v_new) <> 10 or cardinality(mark_events_processed('test_consumer', v_events)) <> 0 then
+      reset role;
+      raise exception 'TEST 11 FAILED: mark_events_processed should return 10 then 0';
+    end if;
+    -- Another worker can't acknowledge them; the lease holder acknowledges all in one call
+    v_done := complete_event_deliveries(v_deliveries, 'someone-else');
+    if v_done <> 0 then reset role; raise exception 'TEST 11 FAILED: another worker acknowledged % deliveries', v_done; end if;
+    v_done := complete_event_deliveries(v_deliveries, 'bulk-worker');
+    reset role;
+    if v_done <> 10 then raise exception 'TEST 11 FAILED: lease holder should acknowledge 10, got %', v_done; end if;
+
+    v_blocked := false;
+    begin
+      set local role authenticated;
+      perform complete_event_deliveries(v_deliveries, 'bulk-worker');
+    exception when insufficient_privilege then v_blocked := true;
+    end;
+    reset role;
+    if not v_blocked then raise exception 'TEST 11 FAILED: authenticated called complete_event_deliveries'; end if;
+  end;
+  raise notice '✓ TEST 11 PASSED: Batches acknowledged in one call (lease holder only); batch idempotency returns only first-time events.';
 
   raise notice '=======================================================';
   raise notice '>>> ALL SPRINT 2 · STEP 3 REALTIME & QUEUE TESTS PASSED <<<';

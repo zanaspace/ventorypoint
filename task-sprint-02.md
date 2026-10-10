@@ -116,15 +116,15 @@ Migration: `supabase/migrations/20261009160000_audit_log.sql` · Tests: `supabas
 ## Sprint 2 — Acceptance Criteria
 
 - [x] 10,000 synthetic events with 5% duplicate idempotency keys → exactly 9,500 unique events (write API TEST 2).
-- [~] Browser subscribed to Facility 1 receives an event in < 500ms (p95); a browser in another org receives nothing. Isolation passes (queue TEST 2); latency must be measured on live Supabase with the Event console.
+- [x] Browser subscribed to Facility 1 receives an event in < 500ms (p95); a browser in another org receives nothing. **Measured 2026-10-10 on hosted Supabase: p50 191 ms, p95 272 ms** with the direct-broadcast fast path (`src/lib/realtime-broadcast.ts`); the database-trigger path alone had p95 3.8 s (bursty), so it is kept only as backup. Unauthorized facility channels refused (CHANNEL_ERROR).
 - [x] Consumer stopped 10 min then restarted → all queued events processed, no loss, no double-processing (queue TEST 8).
 - [x] Any UPDATE/DELETE on `warehouse_events` fails, **including via the service role** (TEST 3).
 - [x] Editing a facility's cutoff time creates an audit entry with old value, new value and editor (audit TEST 1).
 
 ## Sprint 2 — Non-Functional Targets
 
-- [ ] `record_event` p95 < 50ms · batch of 100 < 300ms · realtime p95 < 500ms (measured).
-- [ ] 200 events/s per facility sustained, consumer lag < 5s.
+- [x] Measured on hosted Supabase (PG 17.11, eu-west-1) on 2026-10-10, inside the database: `record_event` p50 0.96 ms / **p95 1.08 ms** (target < 50 ms) ✅ · batch of 100 p50 137 ms / **p95 176 ms** (target < 300 ms) ✅ · realtime p95 **272 ms** (target < 500 ms) ✅. Client-side timings from a remote laptop add network round trips (~170 ms each) and are not a system limit.
+- [x] 200 events/s (2026-10-10, hosted): **200 accepted/s for 60 s, 0 errors** (12,000 events, 5% duplicates handled); database capacity ~730 events/s per connection. Consumer lag with the batched worker running from a remote laptop: 0–1 s steady state, 5–8 s for the first ~15 s of warm-up; deploy the worker in the database region to remove that. Worker drain rate ~270 events/s remote (was ~2/s before batching, migration `20261010120000`).
 - [x] Event reads and realtime channels both enforce org + facility isolation.
 - [x] Monthly partitions pre-created by a scheduled job.
 - [~] Metrics with alerts: `/api/internal/event-health` (Bearer `EVENT_WORKER_SECRET`) returns per-consumer backlog, lag and dead count; **503 when an enabled consumer lags past its threshold or has dead deliveries**. Point an uptime monitor (e.g. Better Stack, Decision 1.00.1) at it. Throughput is measured by the load test script.
@@ -236,6 +236,7 @@ Migration: `supabase/migrations/20261009160000_audit_log.sql` · Tests: `supabas
 ## Found During Step 1
 
 - `supabase/tests/rls_security_suite.sql` (Sprint 1) had never run successfully. **Rewritten 2026-10-10**: 8 tests (roles, two-level admin rules, floor worker creation, sign-in lockout, tenant isolation, immutable org IDs, profile visibility, create_organization), switching users via JWT claims; passes and catches deliberate breakages.
+- **2026-10-10: all 5 suites (43 tests) pass on the hosted Supabase project** (PostgreSQL 17.11), run in rolled-back transactions.
 - Tests run locally in an in-process Postgres 17 (PGlite) with Supabase auth/role stubs. Run them against a real Supabase instance (`supabase db reset` then `psql -f supabase/tests/event_store_suite.sql`) before sign-off.
 
 ## Navigation & Access (2026-10-09)

@@ -17,7 +17,7 @@ import { createClient } from "@supabase/supabase-js";
 import { randomUUID } from "node:crypto";
 
 const env = (name, fallback) => {
-  const v = process.env[name] ?? fallback;
+  const v = process.env[name] || fallback;
   if (v === undefined) {
     console.error(`Missing ${name}`);
     process.exit(1);

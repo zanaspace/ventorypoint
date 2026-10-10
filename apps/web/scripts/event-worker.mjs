@@ -9,7 +9,7 @@
 //   pnpm --filter web worker            # uses apps/web/.env.local
 //
 // Env: SUPABASE_URL (or NEXT_PUBLIC_SUPABASE_URL), SUPABASE_SERVICE_ROLE_KEY,
-//      optional WORKER_IDLE_MS (default 500), WORKER_BATCH (default 50).
+//      optional WORKER_IDLE_MS (default 500), WORKER_BATCH (default 200).
 // Safe to run several copies: deliveries are claimed with SKIP LOCKED + leases.
 
 import { createClient } from "@supabase/supabase-js";
@@ -23,7 +23,7 @@ if (!url || !serviceKey) {
 }
 
 const idleMs = Number(process.env.WORKER_IDLE_MS || 500);
-const batchSize = Number(process.env.WORKER_BATCH || 50);
+const batchSize = Number(process.env.WORKER_BATCH || 200);
 const admin = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
 
 let stopping = false;

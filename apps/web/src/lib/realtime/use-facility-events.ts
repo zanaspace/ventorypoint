@@ -63,6 +63,8 @@ export function useFacilityEvents({ facilityIds = [], organizationId, eventTypes
     const supabase = createClient();
     const topics = topicsKey.split(",");
     const states = new Map<string, string>();
+    // Each event can arrive twice: the direct broadcast (fast) and the database trigger (backup).
+    const seen = new Set<string>();
     let cancelled = false;
 
     const report = () => {
@@ -79,6 +81,9 @@ export function useFacilityEvents({ facilityIds = [], organizationId, eventTypes
         .channel(topic, { config: { private: true } })
         .on("broadcast", { event: "warehouse_event" }, ({ payload }) => {
           const event = payload as FacilityEvent;
+          if (seen.has(event.id)) return;
+          seen.add(event.id);
+          if (seen.size > 5000) seen.delete(seen.values().next().value as string);
           const types = typesRef.current;
           if (!types || types.length === 0 || types.includes(event.event_type)) onEventRef.current(event);
         })

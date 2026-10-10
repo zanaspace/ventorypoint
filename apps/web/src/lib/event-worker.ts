@@ -24,15 +24,23 @@ export interface ClaimedEvent {
   sequence: number;
 }
 
-export type ConsumerHandler = (event: ClaimedEvent, admin: SupabaseClient) => Promise<void>;
+/**
+ * A consumer handles a whole claimed batch (in event order) and reports the
+ * deliveries that failed; everything else is acknowledged in one call.
+ * Handlers make effects exactly-once with mark_events_processed.
+ */
+export type ConsumerHandler = (
+  events: ClaimedEvent[],
+  admin: SupabaseClient
+) => Promise<{ failed?: { delivery_id: string; error: string }[] } | void>;
 
 /** Handlers by consumer name. Consumers without a handler here are left for their own sprint. */
 export const CONSUMER_HANDLERS: Record<string, ConsumerHandler> = {
-  // Proves the pipeline end to end: records that it saw the event, nothing else.
-  test_consumer: async (event, admin) => {
-    const { error } = await admin.rpc("mark_event_processed", {
+  // Proves the pipeline end to end: records that it saw each event, nothing else.
+  test_consumer: async (events, admin) => {
+    const { error } = await admin.rpc("mark_events_processed", {
       p_consumer: "test_consumer",
-      p_event_id: event.event_id,
+      p_event_ids: events.map((e) => e.event_id),
     });
     if (error) throw new Error(error.message);
   },
@@ -44,9 +52,18 @@ export interface WorkerRunSummary {
   consumers: Record<string, { succeeded: number; failed: number; dead: number }>;
 }
 
+async function failDelivery(admin: SupabaseClient, worker: string, deliveryId: string, message: string) {
+  const { data: status } = await admin.rpc("fail_event_delivery", {
+    p_delivery_id: deliveryId,
+    p_worker: worker,
+    p_error: message,
+  });
+  return status as "pending" | "dead" | null;
+}
+
 export async function runEventWorker(
   admin: SupabaseClient,
-  { budgetMs = 20_000, batchSize = 50 }: { budgetMs?: number; batchSize?: number } = {}
+  { budgetMs = 20_000, batchSize = 200 }: { budgetMs?: number; batchSize?: number } = {}
 ): Promise<WorkerRunSummary> {
   const started = Date.now();
   const worker = `web-${crypto.randomUUID().slice(0, 8)}`;
@@ -71,22 +88,32 @@ export async function runEventWorker(
       const events = (batch ?? []) as ClaimedEvent[];
       if (events.length === 0) break;
 
-      // In order: per-entity ordering is (occurred_at, sequence)
-      for (const event of events) {
-        try {
-          await handler(event, admin);
-          await admin.rpc("complete_event_delivery", { p_delivery_id: event.delivery_id, p_worker: worker });
-          stats.succeeded++;
-        } catch (err) {
-          const message = err instanceof Error ? err.message : String(err);
-          const { data: status } = await admin.rpc("fail_event_delivery", {
-            p_delivery_id: event.delivery_id,
-            p_worker: worker,
-            p_error: message,
-          });
-          if (status === "dead") stats.dead++;
-          else stats.failed++;
-        }
+      // 1 round trip for the handler (typically), 1 to acknowledge the batch
+      let failed: { delivery_id: string; error: string }[] = [];
+      try {
+        failed = (await handler(events, admin))?.failed ?? [];
+      } catch (err) {
+        // The whole batch failed (e.g. database unreachable): retry each with backoff
+        const message = err instanceof Error ? err.message : String(err);
+        failed = events.map((e) => ({ delivery_id: e.delivery_id, error: message }));
+      }
+
+      const failedIds = new Set(failed.map((f) => f.delivery_id));
+      const succeededIds = events.map((e) => e.delivery_id).filter((id) => !failedIds.has(id));
+      if (succeededIds.length > 0) {
+        const { data: completed, error: completeError } = await admin.rpc("complete_event_deliveries", {
+          p_delivery_ids: succeededIds,
+          p_worker: worker,
+        });
+        // If the acknowledgement fails, leases expire and the batch is redelivered;
+        // mark_events_processed keeps effects exactly-once.
+        if (completeError) throw new Error(`Acknowledge failed for ${name}: ${completeError.message}`);
+        stats.succeeded += Number(completed ?? 0);
+      }
+      for (const f of failed) {
+        const status = await failDelivery(admin, worker, f.delivery_id, f.error);
+        if (status === "dead") stats.dead++;
+        else stats.failed++;
       }
     }
   }
