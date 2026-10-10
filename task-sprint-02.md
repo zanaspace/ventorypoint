@@ -90,7 +90,8 @@ Migration: `supabase/migrations/20261009150000_realtime_and_queue.sql` · Tests:
   - [x] `claim_event_deliveries` (SKIP LOCKED, 60s lease, expired leases reclaimed), `complete_event_delivery` (lease holder only), `fail_event_delivery` (backoff 5s → 10s → … capped at 1h, + jitter; dead after `max_attempts`, default 8).
   - [x] Consumer-side idempotency: `consumer_processed_events` + `mark_event_processed()`.
   - [x] Worker: `runEventWorker()` with a consumer handler registry; `/api/internal/event-worker` (GET/POST, `Authorization: Bearer $EVENT_WORKER_SECRET`, timing-safe check, 45s budget).
-  - [ ] **Schedule the worker.** Set `EVENT_WORKER_SECRET` (≥ 32 chars) and call the endpoint from pg_cron + pg_net, Vercel Cron or another scheduler. A once-a-minute cron can't meet the 5s lag target. Decide the runtime (open question) before consumers with tight lag (inventory projection) go live.
+  - [x] **Long-running worker** (Decision 1.2.1): `apps/web/scripts/event-worker.mjs`, run with `pnpm --filter web worker`. Polls every 500 ms, backs off on errors, stops cleanly on SIGTERM, safe to run several copies; same code as the cron endpoint.
+  - [ ] **Deploy the worker** where it runs continuously (Decision Log recommends Fly.io): set `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` there. Until then the `/api/internal/event-worker` cron endpoint still works, at up to a minute of lag.
 - [x] **3.3 Event Deliveries view**: staff-only **Event pipeline** at `/internal/event-deliveries` (cross-customer, gated by `PLATFORM_ADMIN_EMAILS` until the Sprint 02A internal console): per-consumer queued / retrying / dead / lag (alert colour above the consumer's threshold) / processed in 24h, failed-delivery list with last error, **Replay** per delivery and **Replay all dead** per consumer. Auto-refreshes every 15s.
 
 ## Step 4 — Audit Log, Load Test & Sign-Off (built; live measurements pending)
@@ -126,7 +127,7 @@ Migration: `supabase/migrations/20261009160000_audit_log.sql` · Tests: `supabas
 - [ ] 200 events/s per facility sustained, consumer lag < 5s.
 - [x] Event reads and realtime channels both enforce org + facility isolation.
 - [x] Monthly partitions pre-created by a scheduled job.
-- [ ] Metrics (throughput, consumer lag, dead-letter count) exported with alerts.
+- [~] Metrics with alerts: `/api/internal/event-health` (Bearer `EVENT_WORKER_SECRET`) returns per-consumer backlog, lag and dead count; **503 when an enabled consumer lags past its threshold or has dead deliveries**. Point an uptime monitor (e.g. Better Stack, Decision 1.00.1) at it. Throughput is measured by the load test script.
 
 ## Sprint 2 — Open Questions (answer or defer before sign-off)
 
@@ -234,10 +235,7 @@ Migration: `supabase/migrations/20261009160000_audit_log.sql` · Tests: `supabas
 
 ## Found During Step 1
 
-- `supabase/tests/rls_security_suite.sql` (Sprint 1) had never run successfully. Fixed: `currency` → `default_currency`. Still broken:
-  - Inserts two members with `RETURNING id INTO` a single variable ("query returned more than one row").
-  - Calls `get_user_role(org, user)` and `can_manage_member(user, member)`, but only one-argument versions exist (they read `auth.uid()`).
-  - Needs a rewrite that switches role/JWT claims like `event_store_suite.sql` does, before Sprint 1 can claim an automated RLS suite.
+- `supabase/tests/rls_security_suite.sql` (Sprint 1) had never run successfully. **Rewritten 2026-10-10**: 8 tests (roles, two-level admin rules, floor worker creation, sign-in lockout, tenant isolation, immutable org IDs, profile visibility, create_organization), switching users via JWT claims; passes and catches deliberate breakages.
 - Tests run locally in an in-process Postgres 17 (PGlite) with Supabase auth/role stubs. Run them against a real Supabase instance (`supabase db reset` then `psql -f supabase/tests/event_store_suite.sql`) before sign-off.
 
 ## Navigation & Access (2026-10-09)

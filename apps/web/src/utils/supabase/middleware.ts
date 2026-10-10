@@ -41,7 +41,8 @@ export async function updateSession(request: NextRequest) {
     path.startsWith('/auth') ||
     path.startsWith('/join') ||   // /join/complete performs its own auth check
     path.startsWith('/invite') ||
-    path.startsWith('/api/internal/event-worker'); // authenticates with EVENT_WORKER_SECRET
+    path.startsWith('/api/internal/event-worker') || // authenticates with EVENT_WORKER_SECRET
+    path.startsWith('/api/internal/event-health'); // authenticates with EVENT_WORKER_SECRET
 
   if (!user && !isPublic) {
     // no user, potentially respond by redirecting the user to the login page

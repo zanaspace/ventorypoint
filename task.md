@@ -24,7 +24,7 @@ Legend: `[x]` done · `[~]` partial · `[ ]` not started
   - [x] Co-member `profiles` read policy (`shares_org_with`) allowing member directory lookups.
   - [x] Two-level admin rules enforced via security definer RPCs (`can_manage_member`, `set_member_active_status`, `remove_member`, `set_admin_privilege`).
   - [x] Field-tampering protection: immutable `organization_id` trigger on facilities/clients, role/status modifications restricted to RPCs.
-  - [~] Automated RLS test suite: `supabase/tests/rls_security_suite.sql` exists but does not run (wrong function signatures, multi-row RETURNING INTO). See task-sprint-02.md "Found During Step 1".
+  - [x] Automated RLS test suite: `supabase/tests/rls_security_suite.sql` (rewritten 2026-10-10; 8 tests passing).
 
 ## Step 2 — Auth & Middleware
 
