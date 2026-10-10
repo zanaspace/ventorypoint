@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Plus, Search, Copy, Check, Trash2, Shield, ShieldOff, ShieldCheck, Link as LinkIcon, Ban, MoreVertical, UserCheck, QrCode, KeyRound, UserPlus } from "lucide-react";
+import { Plus, Search, Copy, Check, Trash2, Shield, ShieldOff, ShieldCheck, Link as LinkIcon, Ban, MoreVertical, UserCheck, QrCode, KeyRound, UserPlus, Pencil } from "lucide-react";
 import { removeMember, toggleMemberStatus, generateInviteCode, setAdminPrivilege, revokeInvite } from "../actions";
 import { createFloorWorkerAction, reissueFloorBadgeAction, updateFloorWorkerPinAction } from "../floor-actions";
 import { BadgeModal } from "./badge-modal";
+import { EditMemberModal } from "./edit-member-modal";
 import { toast } from "sonner";
 import { ActionDropdown } from "@/components/ui/action-dropdown";
 import { TablePagination } from "@/components/ui/table-pagination";
@@ -39,6 +40,7 @@ type Member = {
   inviter: Omit<Profile, "id"> | null;
   credential?: FloorWorkerCredential | null;
   facility_names: string[] | null;
+  facility_ids: string[];
 };
 
 type Invitation = {
@@ -85,6 +87,7 @@ export function MembersClient({
   const [isFloorWorkerModalOpen, setIsFloorWorkerModalOpen] = useState(false);
   const [isPinModalOpen, setIsPinModalOpen] = useState(false);
   const [selectedMemberForPin, setSelectedMemberForPin] = useState<Member | null>(null);
+  const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [newPinValue, setNewPinValue] = useState("");
   const [activeBadgeModal, setActiveBadgeModal] = useState<{
     worker_code: string;
@@ -284,7 +287,11 @@ export function MembersClient({
           failed_attempts: 0,
           locked_until: null,
         },
-        facility_names: formData.get("facility_scope") === "specific" ? ["Specific Facilities"] : null,
+        facility_ids: formData.get("facility_scope") === "specific" ? (formData.getAll("facility_ids") as string[]) : [],
+        facility_names:
+          formData.get("facility_scope") === "specific"
+            ? facilities.filter((f) => formData.getAll("facility_ids").includes(f.id)).map((f) => f.name)
+            : null,
       };
 
       setMembers([newMember, ...members]);
@@ -391,13 +398,13 @@ export function MembersClient({
           <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100">Team Members</h1>
           <p className="text-muted-foreground mt-1">Manage staff access, floor workers, and invite codes.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="grid w-full grid-cols-1 gap-2 min-[420px]:grid-cols-2 sm:flex sm:w-auto sm:items-center">
           <button
             onClick={() => {
               resetForm();
               setIsFloorWorkerModalOpen(true);
             }}
-            className="flex items-center gap-2 border border-border bg-background hover:bg-gray-50 dark:hover:bg-white/10 text-gray-800 dark:text-gray-200 px-3.5 py-2 rounded-lg font-medium transition-colors shadow-xs cursor-pointer"
+            className="flex items-center justify-center gap-2 border border-border bg-background hover:bg-gray-50 dark:hover:bg-white/10 text-gray-800 dark:text-gray-200 px-3.5 py-2.5 rounded-lg font-medium transition-colors shadow-xs cursor-pointer"
           >
             <UserPlus className="w-4 h-4 text-brand-text" />
             Add Floor Worker
@@ -407,7 +414,7 @@ export function MembersClient({
               resetForm();
               setIsModalOpen(true);
             }}
-            className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:bg-primary-hover transition-colors shadow-xs cursor-pointer"
+            className="flex items-center justify-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 rounded-lg font-medium hover:bg-primary-hover transition-colors shadow-xs cursor-pointer"
           >
             <Plus className="w-5 h-5" />
             Invite Member
@@ -418,7 +425,7 @@ export function MembersClient({
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         {/* Main Content Card (Members Table) */}
         <div className="xl:col-span-2 bg-background border border-border rounded-xl shadow-sm overflow-hidden flex flex-col">
-          <div className="p-4 border-b border-border flex flex-col sm:flex-row gap-4 items-center justify-between bg-gray-50/50 dark:bg-white/5">
+          <div className="p-4 border-b border-border flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between bg-gray-50/50 dark:bg-white/5">
             <h2 className="font-semibold text-gray-900 dark:text-gray-100">Active Directory</h2>
             <div className="relative w-full sm:w-64">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -438,7 +445,7 @@ export function MembersClient({
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
+            <table className="responsive-table w-full text-sm text-left">
               <thead className="text-xs text-muted-foreground uppercase bg-gray-50/50 dark:bg-white/5 border-b border-border">
                 <tr>
                   <th className="px-6 py-4 font-semibold">User</th>
@@ -478,6 +485,15 @@ export function MembersClient({
                                   badge_token: member.credential!.badge_token,
                                   org_name: org?.name,
                                 }),
+                            },
+                          ]
+                        : []),
+                      ...(manageable && member.role !== "owner"
+                        ? [
+                            {
+                              label: "Edit role & facilities",
+                              icon: <Pencil className="w-4 h-4" />,
+                              onClick: () => setEditingMember(member),
                             },
                           ]
                         : []),
@@ -543,7 +559,7 @@ export function MembersClient({
 
                     return (
                       <tr key={member.id} className="hover:bg-gray-50/50 dark:hover:bg-white/5 transition-colors">
-                        <td className="px-6 py-4">
+                        <td data-primary className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-brand text-white flex items-center justify-center font-bold shrink-0">
                               {(member.profiles?.first_name || member.profiles?.email || member.credential?.worker_code || "?").charAt(0).toUpperCase()}
@@ -564,7 +580,7 @@ export function MembersClient({
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4">
+                        <td data-label="Role" className="px-6 py-4">
                           <span className="capitalize text-gray-700 dark:text-gray-300 font-medium">
                             {roleLabel(member.role)}
                           </span>
@@ -572,7 +588,7 @@ export function MembersClient({
                             <span className="block text-[11px] text-muted-foreground">Manages all members</span>
                           )}
                         </td>
-                        <td className="px-6 py-4 text-gray-600 dark:text-gray-400 max-w-[180px]">
+                        <td data-label="Facilities" className="px-6 py-4 text-gray-600 dark:text-gray-400 md:max-w-[180px]">
                           {member.all_facilities ? (
                             "All facilities"
                           ) : member.facility_names && member.facility_names.length > 0 ? (
@@ -583,13 +599,13 @@ export function MembersClient({
                             <span className="italic text-gray-400">None</span>
                           )}
                         </td>
-                        <td className="px-6 py-4 text-gray-600 dark:text-gray-400">
+                        <td data-label="Invited by" className="px-6 py-4 text-gray-600 dark:text-gray-400">
                           {member.inviter
                             ? `${member.inviter.first_name ?? ""} ${member.inviter.last_name ?? ""}`.trim() ||
                               member.inviter.email
                             : "—"}
                         </td>
-                        <td className="px-6 py-4">
+                        <td data-label="Status" className="px-6 py-4">
                           <span
                             className={`px-2.5 py-1 rounded-full text-xs font-medium ${
                               member.pending_approval
@@ -602,7 +618,7 @@ export function MembersClient({
                             {member.pending_approval ? "Pending approval" : member.is_active ? "Active" : "Revoked"}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-right">
+                        <td data-actions className="px-6 py-4 text-right">
                           {actions.length > 0 ? (
                             <ActionDropdown actions={actions} />
                           ) : (
@@ -660,7 +676,7 @@ export function MembersClient({
                 <div key={invite.id} className="p-3 border border-border rounded-lg bg-surface flex flex-col gap-2">
                   <div className="flex justify-between items-start gap-2">
                     <div>
-                      <div className="font-mono font-bold text-brand-text tracking-widest text-lg">
+                      <div className="font-mono font-bold text-brand-text tracking-widest text-lg break-all">
                         ••••-{invite.code_hint ?? "????"}
                       </div>
                       <div className="text-[11px] text-muted-foreground">Full code is shown only once, when created</div>
@@ -744,7 +760,7 @@ export function MembersClient({
           )}
           {organizations.length === 1 && <input type="hidden" name="organization_id" value={defaultOrgId} />}
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">First Name</label>
               <input
@@ -976,7 +992,7 @@ export function MembersClient({
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Max Uses</label>
               <input
@@ -1049,6 +1065,44 @@ export function MembersClient({
       </Modal>
 
       {/* Created-invite modal: the only time the plaintext code is visible */}
+      {editingMember && (
+        <EditMemberModal
+          member={{
+            id: editingMember.id,
+            role: editingMember.role,
+            all_facilities: editingMember.all_facilities,
+            facility_ids: editingMember.facility_ids ?? [],
+            displayName:
+              [editingMember.profiles?.first_name, editingMember.profiles?.last_name].filter(Boolean).join(" ") ||
+              editingMember.profiles?.email ||
+              editingMember.credential?.worker_code ||
+              "this member",
+          }}
+          callerRole={myRights[editingMember.organization_id]?.role ?? ""}
+          facilities={facilities.filter((f) => f.organization_id === editingMember.organization_id)}
+          onClose={() => setEditingMember(null)}
+          onSaved={(changes) => {
+            setMembers((list) =>
+              list.map((m) =>
+                m.id === editingMember.id
+                  ? {
+                      ...m,
+                      role: changes.role,
+                      all_facilities: changes.all_facilities,
+                      facility_ids: changes.facility_ids,
+                      facility_names: changes.all_facilities
+                        ? null
+                        : facilities.filter((f) => changes.facility_ids.includes(f.id)).map((f) => f.name),
+                      can_manage_all_members: changes.role === "admin" ? m.can_manage_all_members : false,
+                    }
+                  : m
+              )
+            );
+            setEditingMember(null);
+          }}
+        />
+      )}
+
       <Modal isOpen={!!createdInvite} onClose={() => setCreatedInvite(null)} title="Invite created">
         {createdInvite && (
           <div className="p-6 space-y-5">
@@ -1056,7 +1110,7 @@ export function MembersClient({
               Copy this code now. For security only a hash is stored, so it can&apos;t be shown again.
             </p>
             <div className="flex items-center justify-between gap-3 p-4 rounded-lg border border-border bg-surface">
-              <span className="font-mono font-bold text-brand-text tracking-widest text-2xl">{createdInvite.code}</span>
+              <span className="font-mono font-bold text-brand-text tracking-widest text-xl sm:text-2xl break-all">{createdInvite.code}</span>
               <button
                 onClick={() => copy(createdInvite.code, "created-code", "Invite code copied!")}
                 className="p-2 rounded-md text-gray-500 hover:text-brand-text hover:bg-gray-100 dark:hover:bg-white/10 cursor-pointer"

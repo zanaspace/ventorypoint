@@ -341,7 +341,7 @@ export function FacilitiesClient({
         </div>
         <button 
           onClick={openCreateModal}
-          className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:bg-primary-hover transition-colors shadow-sm cursor-pointer"
+          className="flex w-full sm:w-auto items-center justify-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 rounded-lg font-medium hover:bg-primary-hover transition-colors shadow-sm cursor-pointer"
         >
           <Plus className="w-5 h-5" />
           Add Facility
@@ -369,7 +369,7 @@ export function FacilitiesClient({
 
         {/* Table */}
         <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
+          <table className="responsive-table w-full text-sm text-left">
             <thead className="text-xs text-muted-foreground uppercase bg-gray-50/50 dark:bg-white/5 border-b border-border">
               <tr>
                 <th className="px-6 py-4 font-semibold">Facility Name</th>
@@ -392,24 +392,26 @@ export function FacilitiesClient({
               ) : (
                 paginatedFacilities.map((facility) => (
                   <tr key={facility.id} className="hover:bg-gray-50/50 dark:hover:bg-white/5 transition-colors">
-                    <td className="px-6 py-4 font-medium text-gray-900 dark:text-gray-100 flex items-center gap-3">
+                    <td data-primary className="px-6 py-4 font-medium text-gray-900 dark:text-gray-100">
+                      <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-md bg-accent flex items-center justify-center text-brand-text">
                         <Building className="w-4 h-4" />
                       </div>
                       {facility.name}
+                      </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td data-label="Code" className="px-6 py-4">
                       <span className="px-2.5 py-1 bg-gray-100 text-gray-700 rounded-md text-xs font-mono font-medium">
                         {facility.short_code}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-gray-600">
+                    <td data-label="Location" className="px-6 py-4 text-gray-600">
                       <div className="flex items-center gap-2">
                         <MapPin className="w-4 h-4 text-gray-400 shrink-0" />
                         <div className="flex flex-col min-w-0">
-                          <span className="truncate max-w-[200px]">{facility.address || '—'}</span>
+                          <span className="md:truncate md:max-w-[200px]">{facility.address || '—'}</span>
                           {(facility.city || facility.state || facility.zip_code) && (
-                            <span className="text-xs text-muted-foreground truncate max-w-[200px]">
+                            <span className="text-xs text-muted-foreground md:truncate md:max-w-[200px]">
                               {[facility.city, facility.state].filter(Boolean).join(", ")} {facility.zip_code}
                             </span>
                           )}
@@ -425,13 +427,13 @@ export function FacilitiesClient({
                         ) : null}
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-gray-600">
+                    <td data-label="Timezone" className="px-6 py-4 text-gray-600">
                       <div className="flex items-center gap-2">
                         <Clock className="w-4 h-4 text-gray-400" />
                         {facility.timezone}
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td data-actions className="px-6 py-4 text-right">
                       <ActionDropdown 
                         actions={[
                           {
@@ -512,7 +514,7 @@ export function FacilitiesClient({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Short Code</label>
                   <input 
@@ -581,7 +583,7 @@ export function FacilitiesClient({
 
               {/* Geocoding + pin confirmation */}
               <div className="rounded-lg border border-border p-4 space-y-3">
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="text-sm">
                     <div className="font-medium text-gray-900 dark:text-gray-100">Location pin</div>
                     <div className="text-xs text-muted-foreground">
@@ -632,7 +634,7 @@ export function FacilitiesClient({
                   />
                 )}
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Latitude</label>
                     <input name="latitude" inputMode="decimal" value={geo.latitude} onChange={(e) => setCoord("latitude", e.target.value)} placeholder="e.g. 34.052235" className="w-full px-3 py-2 text-sm border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-brand font-mono" />
@@ -658,7 +660,7 @@ export function FacilitiesClient({
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Operating hours</label>
                 <div className="border border-border rounded-lg divide-y divide-border">
                   {DAYS.map((d) => (
-                    <div key={d.key} className="flex items-center gap-3 px-3 py-2 text-sm">
+                    <div key={d.key} className="flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2 text-sm">
                       <span className="w-24 text-gray-700 dark:text-gray-300">{d.label}</span>
                       <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
                         <input
@@ -711,7 +713,7 @@ export function FacilitiesClient({
                           value={c.carrier}
                           onChange={(e) => setCutoffs(cutoffs.map((x, j) => (j === i ? { ...x, carrier: e.target.value } : x)))}
                           placeholder="Carrier (e.g. UPS Ground)"
-                          className="flex-1 px-3 py-2 text-sm border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-brand"
+                          className="min-w-0 flex-1 px-3 py-2 text-sm border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-brand"
                         />
                         <input
                           type="time"

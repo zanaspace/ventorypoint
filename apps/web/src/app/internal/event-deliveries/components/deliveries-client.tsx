@@ -144,7 +144,7 @@ export function DeliveriesClient({ stats, problems }: { stats: ConsumerHealth[];
           <p className="px-5 py-10 text-center text-sm text-muted-foreground">Nothing is failing. Every delivery succeeded or is waiting its turn.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
+            <table className="responsive-table w-full text-left">
               <thead>
                 <tr className="border-b border-border bg-surface text-xs font-semibold text-muted-foreground">
                   <th className="px-5 py-3">Event</th>
@@ -158,15 +158,15 @@ export function DeliveriesClient({ stats, problems }: { stats: ConsumerHealth[];
               <tbody className="divide-y divide-border">
                 {problems.map((p) => (
                   <tr key={p.id} className="align-top">
-                    <td className="px-5 py-3">
+                    <td data-primary className="px-5 py-3">
                       <div className="font-mono text-sm font-semibold text-foreground">{p.warehouse_events?.event_type ?? "—"}</div>
                       <div className="text-xs text-muted-foreground">
                         {p.warehouse_events && formatDistanceToNow(new Date(p.warehouse_events.occurred_at), { addSuffix: true })}
                       </div>
                     </td>
-                    <td className="px-5 py-3 text-sm">{p.organizations?.name ?? "—"}</td>
-                    <td className="px-5 py-3 text-sm">{label(p.consumer)}</td>
-                    <td className="px-5 py-3">
+                    <td data-label="Organization" className="px-5 py-3 text-sm">{p.organizations?.name ?? "—"}</td>
+                    <td data-label="Consumer" className="px-5 py-3 text-sm">{label(p.consumer)}</td>
+                    <td data-label="Status" className="px-5 py-3">
                       {p.status === "dead" ? (
                         <span className="inline-flex h-6 items-center gap-1.5 rounded-full bg-danger-soft px-2.5 text-xs font-semibold text-danger-text">
                           <AlertOctagon className="size-3.5" strokeWidth={1.75} /> Dead after {p.attempts} tries
@@ -178,8 +178,8 @@ export function DeliveriesClient({ stats, problems }: { stats: ConsumerHealth[];
                         </span>
                       )}
                     </td>
-                    <td className="max-w-md px-5 py-3 font-mono text-xs text-muted-foreground break-words">{p.last_error ?? "—"}</td>
-                    <td className="px-5 py-3 text-right">
+                    <td data-label="Last error" className="md:max-w-md px-5 py-3 font-mono text-xs text-muted-foreground break-words">{p.last_error ?? "—"}</td>
+                    <td data-actions className="px-5 py-3 text-right">
                       {p.status === "dead" && (
                         <button
                           type="button"

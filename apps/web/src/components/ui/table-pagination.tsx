@@ -39,7 +39,7 @@ export function TablePagination({
   const visiblePages = getVisiblePages();
 
   return (
-    <div className="flex items-center justify-between mt-4 text-sm text-gray-500 dark:text-gray-400 px-2">
+    <div className="flex flex-col-reverse items-center gap-3 sm:flex-row sm:justify-between mt-4 text-sm text-gray-500 dark:text-gray-400 px-2">
       <div className="flex items-center gap-2">
         <span>Rows per page</span>
         <div className="w-[4.5rem]">
@@ -58,14 +58,14 @@ export function TablePagination({
         <button 
           onClick={() => onPageChange(1)} 
           disabled={currentPage === 1 || totalPages === 0}
-          className="p-1 hover:text-gray-900 dark:hover:text-gray-100 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed transition-colors"
+          className="grid size-9 place-items-center rounded-md hover:bg-accent hover:text-gray-900 dark:hover:text-gray-100 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed transition-colors"
         >
           <ChevronsLeft className="w-4 h-4" />
         </button>
         <button 
           onClick={() => onPageChange(Math.max(1, currentPage - 1))} 
           disabled={currentPage === 1 || totalPages === 0}
-          className="p-1 hover:text-gray-900 dark:hover:text-gray-100 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed transition-colors"
+          className="grid size-9 place-items-center rounded-md hover:bg-accent hover:text-gray-900 dark:hover:text-gray-100 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed transition-colors"
         >
           <ChevronLeft className="w-4 h-4" />
         </button>
@@ -75,7 +75,7 @@ export function TablePagination({
             <button 
               key={pageNum}
               onClick={() => onPageChange(pageNum)}
-              className={`min-w-[28px] h-7 flex items-center justify-center rounded-md cursor-pointer transition-colors ${
+              className={`min-w-9 h-9 flex items-center justify-center rounded-md cursor-pointer transition-colors ${
                 currentPage === pageNum 
                   ? 'border border-input bg-card text-brand-text font-bold shadow-xs' 
                   : 'hover:bg-accent hover:text-accent-foreground'
@@ -92,14 +92,14 @@ export function TablePagination({
         <button 
           onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))} 
           disabled={currentPage === totalPages || totalPages === 0}
-          className="p-1 hover:text-gray-900 dark:hover:text-gray-100 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed transition-colors"
+          className="grid size-9 place-items-center rounded-md hover:bg-accent hover:text-gray-900 dark:hover:text-gray-100 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed transition-colors"
         >
           <ChevronRight className="w-4 h-4" />
         </button>
         <button 
           onClick={() => onPageChange(totalPages)} 
           disabled={currentPage === totalPages || totalPages === 0}
-          className="p-1 hover:text-gray-900 dark:hover:text-gray-100 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed transition-colors"
+          className="grid size-9 place-items-center rounded-md hover:bg-accent hover:text-gray-900 dark:hover:text-gray-100 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed transition-colors"
         >
           <ChevronsRight className="w-4 h-4" />
         </button>

@@ -54,7 +54,8 @@ export function AppShell({ children, context }: AppShellProps) {
     };
   }, [isUserMenuOpen]);
 
-  const isCollapsed = !isPinned && !isHovered;
+  // The mobile drawer always opens fully expanded; on desktop the rail collapses unless pinned or hovered.
+  const isCollapsed = !isPinned && !isHovered && !isMobileOpen;
   const userRole = context?.role || "member";
 
   // Role-Aware Navigation
@@ -97,7 +98,7 @@ export function AppShell({ children, context }: AppShellProps) {
       <aside
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        className={`relative fixed inset-y-0 left-0 z-50 flex flex-col bg-sidebar border-r border-sidebar-border transition-all duration-300 ease-in-out lg:static lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 flex flex-col bg-sidebar border-r border-sidebar-border transition-all duration-300 ease-in-out lg:relative lg:translate-x-0 ${
           isCollapsed ? "w-20" : "w-64"
         } ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}`}
       >
@@ -216,14 +217,17 @@ export function AppShell({ children, context }: AppShellProps) {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top Header */}
         <header className="h-16 bg-background border-b border-border flex items-center justify-between px-4 lg:px-6 shrink-0">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <button
-              className="lg:hidden text-muted-foreground hover:text-foreground cursor-pointer"
+              className="lg:hidden -ml-2 grid size-11 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
               onClick={() => setIsMobileOpen(true)}
               aria-label="Open menu"
             >
               <Menu className="w-6 h-6" />
             </button>
+            <Link href="/dashboard" className="lg:hidden" aria-label="VentoryPoint home">
+              <BrandMark className="size-7" />
+            </Link>
             <div className="relative hidden sm:block">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" strokeWidth={1.5} />
               <input
@@ -235,7 +239,7 @@ export function AppShell({ children, context }: AppShellProps) {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 lg:gap-4">
+          <div className="flex items-center gap-2 sm:gap-3 lg:gap-4">
             <div className="hidden md:flex items-center gap-2 h-8 px-3 bg-success-soft rounded-full text-xs font-semibold text-success-text" role="status">
               <span className="relative flex size-2">
                 <span className="absolute inline-flex size-full animate-ping rounded-full bg-success opacity-60 motion-reduce:hidden"></span>
@@ -317,7 +321,7 @@ export function AppShell({ children, context }: AppShellProps) {
         </header>
 
         {/* Scrollable Page Content */}
-        <main className="flex-1 overflow-y-auto bg-surface p-4 md:p-6 lg:p-8">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-surface p-4 md:p-6 lg:p-8">
           {children}
         </main>
       </div>

@@ -210,7 +210,7 @@ export function ClientsClient({
         </div>
         <button 
           onClick={openCreateModal}
-          className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:bg-primary-hover transition-colors shadow-sm cursor-pointer"
+          className="flex w-full sm:w-auto items-center justify-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 rounded-lg font-medium hover:bg-primary-hover transition-colors shadow-sm cursor-pointer"
         >
           <Plus className="w-5 h-5" />
           Add Client
@@ -238,7 +238,7 @@ export function ClientsClient({
 
         {/* Table */}
         <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
+          <table className="responsive-table w-full text-sm text-left">
             <thead className="text-xs text-muted-foreground uppercase bg-gray-50/50 dark:bg-white/5 border-b border-border">
               <tr>
                 <th className="px-6 py-4 font-semibold">Client Name</th>
@@ -262,18 +262,20 @@ export function ClientsClient({
               ) : (
                 paginatedClients.map((client) => (
                   <tr key={client.id} className="hover:bg-gray-50/50 dark:hover:bg-white/5 transition-colors">
-                    <td className="px-6 py-4 font-medium text-gray-900 dark:text-gray-100 flex items-center gap-3">
+                    <td data-primary className="px-6 py-4 font-medium text-gray-900 dark:text-gray-100">
+                      <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-md bg-accent flex items-center justify-center text-brand-text font-bold text-lg">
                         {client.name.charAt(0).toUpperCase()}
                       </div>
                       {client.name}
+                      </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td data-label="Code" className="px-6 py-4">
                       <span className="px-2.5 py-1 bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 rounded-md text-xs font-mono font-medium">
                         {client.short_code}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td data-label="Status" className="px-6 py-4">
                       <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
                         client.status === 'active' 
                           ? 'bg-success-soft text-success-text border border-success/25' 
@@ -282,7 +284,7 @@ export function ClientsClient({
                         {client.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-gray-600 dark:text-gray-400">
+                    <td data-label="Facilities" className="px-6 py-4 text-gray-600 dark:text-gray-400">
                       {client.facility_ids?.length ? (
                         <span title={client.facility_ids.map(facilityName).join(", ")}>
                           {client.facility_ids.length} {client.facility_ids.length === 1 ? "facility" : "facilities"}
@@ -296,7 +298,7 @@ export function ClientsClient({
                         <span className="text-gray-400 italic">None assigned</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-gray-600 dark:text-gray-400">
+                    <td data-label="Contact" className="px-6 py-4 text-gray-600 dark:text-gray-400">
                       {client.primary_contact_name ? (
                         <div className="flex flex-col">
                           <span className="font-medium">{client.primary_contact_name}</span>
@@ -306,7 +308,7 @@ export function ClientsClient({
                         <span className="text-gray-400 italic">Not set</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td data-actions className="px-6 py-4 text-right">
                       <ActionDropdown 
                         actions={[
                           {

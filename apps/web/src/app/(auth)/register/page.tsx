@@ -28,7 +28,7 @@ export default async function RegisterPage(
           <ToastError />
         </Suspense>
         <form className="space-y-4" action={signup}>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="first-name">First name</Label>
               <Input id="first-name" name="first-name" required />
@@ -63,7 +63,7 @@ export default async function RegisterPage(
         </div>
 
         {/* Social Auth Providers */}
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 gap-2 min-[400px]:grid-cols-3">
           <form action={signInWithGoogle}>
             <button
               type="submit"

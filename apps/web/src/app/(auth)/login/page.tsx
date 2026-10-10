@@ -61,7 +61,7 @@ export default async function LoginPage(
         </div>
 
         {/* Social Auth Providers */}
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 gap-2 min-[400px]:grid-cols-3">
           <form action={signInWithGoogle}>
             <button
               type="submit"
@@ -125,7 +125,7 @@ export default async function LoginPage(
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 mt-4">
+        <div className="grid grid-cols-1 gap-2 mt-4 min-[400px]:grid-cols-2">
           <Link href="/join" className={buttonVariants({ variant: "outline", className: "w-full text-xs" })}>
             Invite Code
           </Link>

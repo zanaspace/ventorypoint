@@ -97,6 +97,7 @@ export default async function MembersPage() {
     profiles: first(m.profiles),
     inviter: first(m.inviter),
     credential: first(m.floor_worker_credentials),
+    facility_ids: (m.member_facility_access || []).map((a: any) => a.facility_id as string),
     facility_names: m.all_facilities
       ? null
       : (m.member_facility_access || [])

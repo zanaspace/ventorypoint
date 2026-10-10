@@ -44,6 +44,11 @@ declare
   v_ok boolean;
   v_blocked boolean;
   v_role text;
+  v_fac_a2 uuid;
+  v_m_sup uuid;
+  v_m_ops uuid;
+  v_sup uuid := gen_random_uuid();
+  v_hint text;
 begin
   raise notice '>>> STARTING SPRINT 1 SECURITY & RLS TEST SUITE <<<';
 
@@ -303,6 +308,154 @@ begin
   reset role;
   if v_role is distinct from 'owner' then raise exception 'TEST 8 FAILED: creator should be owner, got %', v_role; end if;
   raise notice '✓ TEST 8 PASSED: create_organization makes the caller the owner.';
+
+  -- ---------------------------------------------------------------
+  -- TEST 9: Editing a member's role and facility access (update_member_access)
+  -- ---------------------------------------------------------------
+  insert into public.facilities (organization_id, name, short_code) values (v_org_a, 'Austin Hub A2', 'AUS') returning id into v_fac_a2;
+  insert into public.profiles (id, email, first_name) values (v_sup, 'sup_a@s1.test', 'Sue');
+  insert into public.organization_members (organization_id, user_id, role, is_active, all_facilities, added_by)
+    values (v_org_a, v_sup, 'supervisor', true, true, v_owner_a) returning id into v_m_sup;
+  select id into v_m_ops from public.organization_members where organization_id = v_org_a and user_id = v_ops_a;
+
+  -- 9.1 Owner: supervisor -> admin, then admin -> billing (manage-all flag cleared on demotion)
+  perform set_config('request.jwt.claims', json_build_object('sub', v_owner_a, 'role', 'authenticated')::text, true);
+  set local role authenticated;
+  perform update_member_access(v_m_sup, 'admin', true, '{}');
+  perform set_admin_privilege(v_m_sup, true);
+  perform update_member_access(v_m_sup, 'billing', true, '{}');
+  reset role;
+  if (select role::text || ':' || can_manage_all_members from public.organization_members where id = v_m_sup) <> 'billing:false' then
+    raise exception 'TEST 9.1 FAILED: owner role change / manage-all reset wrong';
+  end if;
+
+  -- 9.2 Specific facilities: set two, narrow to one, then back to all
+  set local role authenticated;
+  perform update_member_access(v_m_sup, 'billing', false, array[v_fac_a, v_fac_a2]);
+  reset role;
+  if (select count(*) from public.member_facility_access where member_id = v_m_sup) <> 2
+     or (select all_facilities from public.organization_members where id = v_m_sup) then
+    raise exception 'TEST 9.2 FAILED: two specific facilities expected';
+  end if;
+  set local role authenticated;
+  perform update_member_access(v_m_sup, 'billing', false, array[v_fac_a2]);
+  reset role;
+  if (select array_agg(facility_id) from public.member_facility_access where member_id = v_m_sup) <> array[v_fac_a2] then
+    raise exception 'TEST 9.2 FAILED: access should narrow to A2 only';
+  end if;
+  set local role authenticated;
+  perform update_member_access(v_m_sup, 'billing', true, '{}');
+  reset role;
+  if exists (select 1 from public.member_facility_access where member_id = v_m_sup)
+     or not (select all_facilities from public.organization_members where id = v_m_sup) then
+    raise exception 'TEST 9.2 FAILED: all-facilities should clear specific rows';
+  end if;
+
+  -- 9.3 Facilities from another org are rejected; owners and self can't be edited; floor worker role is fixed
+  v_hint := null;
+  begin
+    set local role authenticated;
+    perform update_member_access(v_m_sup, 'billing', false, array[v_fac_b]);
+  exception when others then v_hint := sqlerrm;
+  end;
+  reset role;
+  if v_hint is null then raise exception 'TEST 9.3 FAILED: other org facility accepted'; end if;
+
+  v_blocked := false;
+  begin
+    set local role authenticated;
+    perform update_member_access(v_m_worker_a, 'supervisor', true, '{}');
+  exception when others then v_blocked := true;
+  end;
+  reset role;
+  if not v_blocked then raise exception 'TEST 9.3 FAILED: floor worker became a supervisor'; end if;
+
+  v_blocked := false;
+  begin
+    set local role authenticated;
+    perform update_member_access(v_m_owner_a, 'owner', true, '{}');
+  exception when others then v_blocked := true;
+  end;
+  reset role;
+  if not v_blocked then raise exception 'TEST 9.3 FAILED: owner edited themselves'; end if;
+
+  v_blocked := false;
+  begin
+    set local role authenticated;
+    perform update_member_access(v_m_sup, 'owner', true, '{}');
+  exception when others then v_blocked := true;
+  end;
+  reset role;
+  if not v_blocked then raise exception 'TEST 9.3 FAILED: someone was made owner'; end if;
+
+  -- 9.4 Admin (manage-all, from TEST 2): can change ops roles, can't make admins or touch admins
+  perform set_config('request.jwt.claims', json_build_object('sub', v_admin_a, 'role', 'authenticated')::text, true);
+  set local role authenticated;
+  perform update_member_access(v_m_sup, 'supervisor', true, '{}');
+  reset role;
+  if (select role from public.organization_members where id = v_m_sup) <> 'supervisor' then
+    raise exception 'TEST 9.4 FAILED: admin should change a manageable member''s role';
+  end if;
+  v_blocked := false;
+  begin
+    set local role authenticated;
+    perform update_member_access(v_m_sup, 'admin', true, '{}');
+  exception when others then v_blocked := true;
+  end;
+  reset role;
+  if not v_blocked then raise exception 'TEST 9.4 FAILED: admin made someone an admin'; end if;
+  v_blocked := false;
+  begin
+    set local role authenticated;
+    perform update_member_access(v_m_admin2_a, 'billing', true, '{}');
+  exception when others then v_blocked := true;
+  end;
+  reset role;
+  if not v_blocked then raise exception 'TEST 9.4 FAILED: admin demoted another admin'; end if;
+
+  -- 9.5 Ops manager: floor workers' facilities only
+  perform set_config('request.jwt.claims', json_build_object('sub', v_ops_a, 'role', 'authenticated')::text, true);
+  set local role authenticated;
+  perform update_member_access(v_m_worker_a, 'floor_worker', false, array[v_fac_a2]);
+  reset role;
+  if (select array_agg(facility_id) from public.member_facility_access where member_id = v_m_worker_a) <> array[v_fac_a2] then
+    raise exception 'TEST 9.5 FAILED: ops manager should set a floor worker''s facilities';
+  end if;
+  v_blocked := false;
+  begin
+    set local role authenticated;
+    perform update_member_access(v_m_sup, 'supervisor', false, array[v_fac_a]);
+  exception when others then v_blocked := true;
+  end;
+  reset role;
+  if not v_blocked then raise exception 'TEST 9.5 FAILED: ops manager edited a supervisor'; end if;
+
+  -- 9.6 Other org owner can't edit; direct table writes stay closed; changes are audited with the actor
+  perform set_config('request.jwt.claims', json_build_object('sub', v_owner_b, 'role', 'authenticated')::text, true);
+  v_blocked := false;
+  begin
+    set local role authenticated;
+    perform update_member_access(v_m_sup, 'billing', true, '{}');
+  exception when others then v_blocked := true;
+  end;
+  reset role;
+  if not v_blocked then raise exception 'TEST 9.6 FAILED: other org edited a member'; end if;
+
+  perform set_config('request.jwt.claims', json_build_object('sub', v_owner_a, 'role', 'authenticated')::text, true);
+  set local role authenticated;
+  update public.organization_members set role = 'admin' where id = v_m_sup;
+  reset role;
+  if (select role from public.organization_members where id = v_m_sup) <> 'supervisor' then
+    raise exception 'TEST 9.6 FAILED: direct role update went through';
+  end if;
+  if to_regclass('public.audit_log') is not null and not exists (
+    select 1 from public.audit_log
+    where table_name = 'organization_members' and row_id = v_m_sup::text
+      and 'role' = any (changed_fields) and actor_user_id = v_admin_a
+  ) then
+    raise exception 'TEST 9.6 FAILED: role change by the admin not in the change history';
+  end if;
+  raise notice '✓ TEST 9 PASSED: Role + facility edits follow owner/admin/ops-manager rules; validated, audited, no direct writes.';
 
   raise notice '=======================================================';
   raise notice '>>> ALL PHASE 1 SPRINT 1 SECURITY & RLS TESTS PASSED <<<';

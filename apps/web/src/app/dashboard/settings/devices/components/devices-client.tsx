@@ -177,7 +177,7 @@ export function DevicesClient({
           onClick={() =>
             setEditing({ mode: "register", name: "", deviceType: "browser", facilityId: facilities[0]?.id ?? "" })
           }
-          className="inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-45"
+          className="inline-flex h-10 w-full sm:w-auto items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-45"
         >
           <Plus className="size-4" />
           Register this browser
@@ -255,7 +255,7 @@ export function DevicesClient({
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
+            <table className="responsive-table w-full text-left">
               <thead>
                 <tr className="border-b border-border bg-surface text-xs font-semibold text-muted-foreground">
                   <th className="px-5 py-3">Device</th>
@@ -302,27 +302,29 @@ export function DevicesClient({
 
                   return (
                     <tr key={d.id} className={status === "retired" ? "opacity-60" : "hover:bg-accent/40"}>
-                      <td className="px-5 py-3">
+                      <td data-primary className="px-5 py-3">
                         <div className="text-sm font-semibold text-foreground">{d.device_name}</div>
                         <div className="text-xs text-muted-foreground">
                           {DEVICE_TYPE_OPTIONS.find((o) => o.value === d.device_type)?.label ?? d.device_type}
                         </div>
                       </td>
-                      <td className="px-5 py-3 text-sm">
+                      <td data-label="Warehouse" className="px-5 py-3 text-sm">
                         {facilityName(d.facility_id) ?? <span className="text-muted-foreground">Not assigned</span>}
                       </td>
-                      <td className="px-5 py-3">
-                        <StatusBadge status={status} />
-                        {status === "blocked" && d.blocked_at && (
-                          <div className="mt-1 text-xs text-muted-foreground">
-                            Blocked {formatDistanceToNow(new Date(d.blocked_at), { addSuffix: true })}
-                          </div>
-                        )}
+                      <td data-label="Status" className="px-5 py-3">
+                        <div className="flex flex-col items-end md:items-start">
+                          <StatusBadge status={status} />
+                          {status === "blocked" && d.blocked_at && (
+                            <div className="mt-1 text-xs text-muted-foreground">
+                              Blocked {formatDistanceToNow(new Date(d.blocked_at), { addSuffix: true })}
+                            </div>
+                          )}
+                        </div>
                       </td>
-                      <td className="px-5 py-3 text-sm text-muted-foreground">
+                      <td data-label="Last seen" className="px-5 py-3 text-sm text-muted-foreground">
                         {d.last_active_at ? formatDistanceToNow(new Date(d.last_active_at), { addSuffix: true }) : "Never"}
                       </td>
-                      <td className="px-5 py-3 text-right">
+                      <td data-actions className="px-5 py-3 text-right">
                         {actions.length > 0 && <ActionDropdown actions={actions} label={`Actions for ${d.device_name}`} />}
                       </td>
                     </tr>

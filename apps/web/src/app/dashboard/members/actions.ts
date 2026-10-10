@@ -27,6 +27,35 @@ export async function toggleMemberStatus(memberId: string, isActive: boolean) {
   return { success: true };
 }
 
+const EDITABLE_ROLES = ["admin", "ops_manager", "supervisor", "billing", "floor_worker", "client_user"];
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Changes a member's role and facility access (rules enforced by update_member_access). */
+export async function updateMemberAccess(
+  memberId: string,
+  role: string,
+  allFacilities: boolean,
+  facilityIds: string[]
+) {
+  if (!EDITABLE_ROLES.includes(role)) return { error: "Choose a valid role." };
+  const ids = allFacilities ? [] : facilityIds.filter((id) => UUID_RE.test(id));
+  if (!allFacilities && ids.length === 0) {
+    return { error: "Choose at least one facility, or give access to all facilities." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("update_member_access", {
+    p_member_id: memberId,
+    p_role: role,
+    p_all_facilities: allFacilities,
+    p_facility_ids: ids,
+  });
+  if (error) return { error: error.message };
+
+  revalidatePath("/dashboard/members");
+  return { success: true };
+}
+
 export async function setAdminPrivilege(memberId: string, value: boolean) {
   const supabase = await createClient();
   const { error } = await supabase.rpc("set_admin_privilege", {

@@ -1,41 +1,49 @@
 
-> web@0.1.0 build C:\Users\princ\3D Objects\ventorypoint\apps\web
+> web@0.1.0 build C:\Users\CI-STAFF\Documents\ventorypoint\apps\web
 > next build
 
 ▲ Next.js 16.3.8 (Turbopack)
 - Environments: .env.local
-✓ Running next.config.ts took 185ms
+✓ Running next.config.ts took 127ms
 
   Creating an optimized production build ...
-✓ Compiled successfully in 8.1s
+✓ Compiled successfully in 2.2s
   Running TypeScript ...
-  Finished TypeScript in 8.8s ...
-  Collecting page data using 3 workers ...
-  Generating static pages using 3 workers (0/20) ...
-  Generating static pages using 3 workers (5/20) 
-  Generating static pages using 3 workers (10/20) 
-  Generating static pages using 3 workers (15/20) 
-✓ Generating static pages using 3 workers (20/20) in 914ms
+  Finished TypeScript in 5.0s ...
+  Collecting page data using 7 workers ...
+  Generating static pages using 7 workers (0/23) ...
+  Generating static pages using 7 workers (5/23) 
+  Generating static pages using 7 workers (11/23) 
+  Generating static pages using 7 workers (17/23) 
+✓ Generating static pages using 7 workers (23/23) in 839ms
   Finalizing page optimization ...
 
 Route (app)
 ┌ ○ /
 ├ ○ /_not-found
+├ ƒ /api/internal/event-health
+├ ƒ /api/internal/event-worker
 ├ ƒ /auth/callback
+├ ƒ /auth/confirm
 ├ ƒ /dashboard
 ├ ƒ /dashboard/clients
 ├ ƒ /dashboard/facilities
 ├ ƒ /dashboard/members
 ├ ƒ /dashboard/settings
+├ ƒ /dashboard/settings/audit-log
+├ ƒ /dashboard/settings/devices
 ├ ƒ /floor-login
 ├ ƒ /forgot-password
+├ ƒ /internal
+├ ƒ /internal/event-console
+├ ƒ /internal/event-deliveries
 ├ ƒ /invite
 ├ ○ /join
 ├ ƒ /join/complete
 ├ ƒ /login
 ├ ƒ /onboarding
 ├ ƒ /register
-├ ○ /reset-password
+├ ƒ /reset-password
 └ ƒ /revoked
 
 
