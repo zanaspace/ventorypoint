@@ -134,9 +134,15 @@ export async function updateFacility(id: string, formData: FormData) {
     return { error: "Missing required fields" };
   }
 
+  // Only re-stamp geocoded_at when the pin actually moved, so unrelated edits
+  // (e.g. a cutoff time) don't look like a new geocode in the change history.
+  const { geocoded_at, ...fields } = parsed.fields;
+  const { data: current } = await supabase.from("facilities").select("latitude, longitude").eq("id", id).single();
+  const pinMoved = !current || current.latitude !== fields.latitude || current.longitude !== fields.longitude;
+
   const { data, error } = await supabase
     .from("facilities")
-    .update(parsed.fields)
+    .update(pinMoved ? { ...fields, geocoded_at } : fields)
     .eq("id", id)
     .select()
     .single();
@@ -163,6 +169,9 @@ export type GeocodeResult =
       ok: true;
       latitude: number;
       longitude: number;
+      /** "exact" = the street address matched; "approximate" = only the area (city/ZIP) matched. */
+      precision: "exact" | "approximate";
+      street: string | null;
       city: string | null;
       state: string | null;
       zip_code: string | null;
@@ -172,47 +181,102 @@ export type GeocodeResult =
     }
   | { ok: false; error: string };
 
+interface NominatimResult {
+  lat: string;
+  lon: string;
+  display_name: string;
+  address?: Record<string, string | undefined>;
+}
+
+// OpenStreetMap Nominatim: no API key, ~1 request/second fair-use limit.
+// Swap these fetches for Google/Mapbox later without touching the UI.
+const NOMINATIM = "https://nominatim.openstreetmap.org";
+const NOMINATIM_HEADERS = { "User-Agent": "VentoryPoint/1.0 (facility geocoding)", Accept: "application/json" };
+
+function toResult(r: NominatimResult, precision: "exact" | "approximate"): GeocodeResult {
+  const a = r.address || {};
+  const street = [a.house_number, a.road].filter(Boolean).join(" ") || null;
+  return {
+    ok: true,
+    latitude: Number(r.lat),
+    longitude: Number(r.lon),
+    precision,
+    street,
+    city: a.city || a.town || a.village || a.hamlet || a.suburb || null,
+    state: a.state || null,
+    zip_code: a.postcode || null,
+    county: a.county || null,
+    country: a.country_code ? a.country_code.toUpperCase() : null,
+    display_name: r.display_name,
+  };
+}
+
+async function search(q: string): Promise<NominatimResult | null | "unavailable"> {
+  const res = await fetch(`${NOMINATIM}/search?format=jsonv2&addressdetails=1&limit=1&q=${encodeURIComponent(q)}`, {
+    headers: NOMINATIM_HEADERS,
+    cache: "no-store",
+  });
+  if (!res.ok) return "unavailable";
+  const results = (await res.json()) as NominatimResult[];
+  return results[0] ?? null;
+}
+
 /**
- * Geocodes a free-text address via OpenStreetMap Nominatim (no API key, ~1 req/sec fair-use limit).
- * Swap the fetch for Google/Mapbox here later without touching the UI.
+ * Finds coordinates for an address. Tries the full address first; if that fails
+ * (common with suite/unit numbers or new buildings), falls back to city/state/ZIP
+ * and reports the pin as approximate.
  */
-export async function geocodeAddress(address: string): Promise<GeocodeResult> {
+export async function geocodeAddress(input: {
+  street: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+}): Promise<GeocodeResult> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Not authenticated" };
 
-  const q = address.trim();
-  if (q.length < 5) return { ok: false, error: "Enter a fuller address first." };
+  const area = [input.city, input.state, input.zip].map((s) => s?.trim()).filter(Boolean).join(", ");
+  const full = [input.street.trim(), area].filter(Boolean).join(", ");
+  if (full.length < 5) return { ok: false, error: "Enter a street address or city first." };
+
+  try {
+    const exact = await search(full);
+    if (exact === "unavailable") return { ok: false, error: "The address lookup service is unavailable. Use your current location or enter coordinates." };
+    if (exact) return toResult(exact, "exact");
+
+    if (area && area !== full) {
+      const approx = await search(area);
+      if (approx && approx !== "unavailable") return toResult(approx, "approximate");
+    }
+    return {
+      ok: false,
+      error: "We couldn't find this address. Check it, use your current location, or enter coordinates manually.",
+    };
+  } catch {
+    return { ok: false, error: "Address lookup failed. Use your current location or enter coordinates manually." };
+  }
+}
+
+/** Looks up the address at a coordinate (used after "Use my current location"). */
+export async function reverseGeocode(latitude: number, longitude: number): Promise<GeocodeResult> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Not authenticated" };
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || Math.abs(latitude) > 90 || Math.abs(longitude) > 180) {
+    return { ok: false, error: "Invalid coordinates." };
+  }
 
   try {
     const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=1&q=${encodeURIComponent(q)}`,
-      {
-        headers: { "User-Agent": "VentoryPoint/1.0 (facility geocoding)", Accept: "application/json" },
-        cache: "no-store",
-      }
+      `${NOMINATIM}/reverse?format=jsonv2&addressdetails=1&zoom=18&lat=${latitude}&lon=${longitude}`,
+      { headers: NOMINATIM_HEADERS, cache: "no-store" }
     );
-    if (!res.ok) return { ok: false, error: "Geocoding service unavailable. Enter coordinates manually." };
-
-    const results = (await res.json()) as any[];
-    if (!results.length) {
-      return { ok: false, error: "We couldn't verify this address. Check it, or enter coordinates manually." };
-    }
-
-    const r = results[0];
-    const a = r.address || {};
-    return {
-      ok: true,
-      latitude: Number(r.lat),
-      longitude: Number(r.lon),
-      city: a.city || a.town || a.village || a.hamlet || null,
-      state: a.state || null,
-      zip_code: a.postcode || null,
-      county: a.county || null,
-      country: a.country_code ? String(a.country_code).toUpperCase() : null,
-      display_name: r.display_name,
-    };
+    if (!res.ok) return { ok: false, error: "The address lookup service is unavailable." };
+    const r = (await res.json()) as NominatimResult & { error?: string };
+    if (r.error || !r.lat) return { ok: false, error: "No address found at this location." };
+    return { ...(toResult(r, "exact") as Extract<GeocodeResult, { ok: true }>), latitude, longitude };
   } catch {
-    return { ok: false, error: "Geocoding failed. Enter coordinates manually." };
+    return { ok: false, error: "Address lookup failed." };
   }
 }

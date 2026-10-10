@@ -14,6 +14,9 @@ export interface FloorDevice {
   is_authorized: boolean;
   is_blocked: boolean;
   facility_id: string | null;
+  facility_name?: string | null;
+  /** Present only while the terminal has no warehouse yet. */
+  facility_choices?: { id: string; name: string; code: string | null }[] | null;
 }
 
 export interface FloorWorkerSession {
@@ -143,4 +146,23 @@ export async function submitFloorEvents(events: Omit<EventInput, "device_id" | "
   }
   const supabase = await createClient();
   return recordFloorEvents(supabase, token, events);
+}
+
+/** First-time setup: the worker picks which warehouse this terminal is in (only while it has none). */
+export async function chooseTerminalFacility(
+  facilityId: string
+): Promise<{ ok: true; session: FloorWorkerSession } | { ok: false; error: string }> {
+  const token = (await cookies()).get(SESSION_COOKIE)?.value;
+  if (!token) return { ok: false, error: "Sign in with your badge to continue." };
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_floor_device_facility", {
+    p_session_token: token,
+    p_facility_id: facilityId,
+  });
+  if (error) return { ok: false, error: error.message };
+
+  const session = await readSession(token);
+  if (!session) return { ok: false, error: "Your session has ended. Sign in again." };
+  return { ok: true, session };
 }

@@ -3,8 +3,11 @@
 import { useState, useEffect, useRef, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { loginFloorWorker, logoutFloorWorker, type FloorWorkerSession } from "./actions";
+import { chooseTerminalFacility, loginFloorWorker, logoutFloorWorker, type FloorWorkerSession } from "./actions";
 import { useDeviceId } from "@/lib/device-id";
+import { extractBadgeToken } from "@/lib/badge";
+import { CameraScanner } from "@/components/floor/camera-scanner";
+import { Camera } from "lucide-react";
 
 interface FloorTerminalClientProps {
   initialSession: FloorWorkerSession | null;
@@ -18,6 +21,7 @@ export function FloorTerminalClient({ initialSession }: FloorTerminalClientProps
   const [step, setStep] = useState<"badge" | "pin">("badge");
   const [errorMsg, setErrorMsg] = useState("");
   const [isLocked, setIsLocked] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
   const [isPending, startTransition] = useTransition();
   const deviceId = useDeviceId();
 
@@ -54,11 +58,10 @@ export function FloorTerminalClient({ initialSession }: FloorTerminalClientProps
       lastKeyTime = currentTime;
 
       if (e.key === "Enter") {
-        if (buffer.startsWith("vp_badge_") || buffer.length >= 8) {
+        const token = extractBadgeToken(buffer) ?? (buffer.trim().length >= 8 ? buffer.trim() : null);
+        if (token) {
           e.preventDefault();
-          setBadgeToken(buffer.trim());
-          setStep("pin");
-          setErrorMsg("");
+          acceptBadge(token);
           buffer = "";
         }
       } else if (e.key.length === 1) {
@@ -69,6 +72,14 @@ export function FloorTerminalClient({ initialSession }: FloorTerminalClientProps
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [session, step]);
+
+  // One way in for every badge source: scanner, camera, typing or pasting.
+  function acceptBadge(token: string) {
+    setBadgeToken(token);
+    setShowCamera(false);
+    setErrorMsg("");
+    setStep("pin");
+  }
 
   const handleBadgeSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -127,6 +138,18 @@ export function FloorTerminalClient({ initialSession }: FloorTerminalClientProps
     });
   };
 
+  const handleChooseFacility = (facilityId: string) => {
+    startTransition(async () => {
+      const res = await chooseTerminalFacility(facilityId);
+      if (res.ok) {
+        setSession(res.session);
+        setErrorMsg("");
+      } else {
+        setErrorMsg(res.error);
+      }
+    });
+  };
+
   const handleSignOut = async () => {
     startTransition(async () => {
       await logoutFloorWorker();
@@ -141,6 +164,19 @@ export function FloorTerminalClient({ initialSession }: FloorTerminalClientProps
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100 flex flex-col justify-between p-4 md:p-8 selection:bg-purple-500 selection:text-white">
+      {showCamera && !session && (
+        <CameraScanner
+          onResult={(text) => {
+            const token = extractBadgeToken(text);
+            if (token) acceptBadge(token);
+            else {
+              setShowCamera(false);
+              setErrorMsg("That code isn't a VentoryPoint badge. Scan the QR code on your badge.");
+            }
+          }}
+          onClose={() => setShowCamera(false)}
+        />
+      )}
       {/* Header bar */}
       <header className="flex items-center justify-between border-b border-gray-800 pb-4">
         <div className="flex items-center gap-3">
@@ -214,10 +250,44 @@ export function FloorTerminalClient({ initialSession }: FloorTerminalClientProps
                     {session.device ? session.device.name : "Not identified"}
                   </span>
                 </div>
+                {session.device?.facility_name && (
+                  <div className="flex justify-between text-gray-400">
+                    <span>Warehouse:</span>
+                    <span className="font-medium text-gray-200">{session.device.facility_name}</span>
+                  </div>
+                )}
               </div>
 
-              {/* Floor events need an approved terminal assigned to a facility */}
-              {(!session.device || !session.device.is_authorized || !session.device.facility_id) && (
+              {/* First-time setup: an active terminal with no warehouse asks the worker once */}
+              {session.device && session.device.is_authorized && !session.device.facility_id && (
+                <div className="rounded-xl border border-gray-700 bg-gray-950 p-4 text-left">
+                  <p id="choose-warehouse" className="text-xl font-bold text-white">Which warehouse is this terminal in?</p>
+                  <p className="mt-1 text-base text-gray-400">You only need to do this once. A supervisor can change it later.</p>
+                  {session.device.facility_choices && session.device.facility_choices.length > 0 ? (
+                    <div role="group" aria-labelledby="choose-warehouse" className="mt-4 grid gap-2">
+                      {session.device.facility_choices.map((f) => (
+                        <button
+                          key={f.id}
+                          type="button"
+                          disabled={isPending}
+                          onClick={() => handleChooseFacility(f.id)}
+                          className="flex min-h-14 items-center justify-between rounded-xl border-2 border-gray-700 bg-gray-900 px-4 text-left text-lg font-semibold text-white transition-colors hover:border-purple-400 hover:bg-gray-800 disabled:opacity-50"
+                        >
+                          <span>{f.name}</span>
+                          {f.code && <span className="font-mono text-base text-gray-400">{f.code}</span>}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-3 text-base text-amber-200">
+                      You don&apos;t have access to any warehouse yet. Ask a supervisor to give you access.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Strict mode or blocked: a supervisor has to act */}
+              {(!session.device || !session.device.is_authorized) && (
                 <div
                   role="status"
                   className="rounded-xl border border-amber-800/70 bg-amber-950/70 p-4 text-left text-amber-200"
@@ -225,12 +295,12 @@ export function FloorTerminalClient({ initialSession }: FloorTerminalClientProps
                   <p className="text-base font-semibold">
                     {session.device?.is_blocked
                       ? "This terminal has been blocked by a supervisor"
-                      : !session.device || !session.device.is_authorized
+                      : session.device
                         ? "This terminal needs a supervisor's approval"
-                        : "This terminal isn't assigned to a facility"}
+                        : "This terminal couldn't be identified"}
                   </p>
                   <p className="mt-1 text-sm">
-                    Ask a supervisor to open Devices in VentoryPoint
+                    Ask a supervisor to open Settings → Devices in VentoryPoint
                     {session.device ? (
                       <>
                         {" "}and {session.device.is_blocked ? "unblock" : "approve"}{" "}
@@ -305,10 +375,15 @@ export function FloorTerminalClient({ initialSession }: FloorTerminalClientProps
                       <input
                         ref={badgeInputRef}
                         type="text"
-                        placeholder="Scan or type badge token (e.g. vp_badge_...)"
+                        placeholder="Scan or type your badge code"
                         value={badgeToken}
-                        onChange={(e) => setBadgeToken(e.target.value)}
-                        className="w-full px-4 py-3.5 rounded-xl bg-gray-950 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm font-mono tracking-wide"
+                        onChange={(e) => {
+                          // Scanners without an Enter suffix (and pasted codes) move on as soon as the code is complete
+                          const token = extractBadgeToken(e.target.value);
+                          if (token) acceptBadge(token);
+                          else setBadgeToken(e.target.value);
+                        }}
+                        className="w-full pl-4 pr-24 py-3.5 rounded-xl bg-gray-950 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm font-mono tracking-wide"
                         autoComplete="off"
                         autoFocus
                       />
@@ -323,6 +398,18 @@ export function FloorTerminalClient({ initialSession }: FloorTerminalClientProps
                       className="w-full py-3.5 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-semibold text-sm transition-all shadow-lg shadow-purple-600/20"
                     >
                       Continue to PIN →
+                    </button>
+
+                    <div className="flex items-center gap-3 text-xs uppercase tracking-wider text-gray-500" aria-hidden="true">
+                      <span className="h-px flex-1 bg-gray-800" /> or <span className="h-px flex-1 bg-gray-800" />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowCamera(true)}
+                      className="flex min-h-14 w-full items-center justify-center gap-3 rounded-xl border-2 border-gray-700 bg-gray-900 px-4 text-base font-semibold text-white transition-colors hover:border-purple-400 hover:bg-gray-800"
+                    >
+                      <Camera className="size-6" />
+                      Scan badge with camera
                     </button>
                   </form>
                 </div>

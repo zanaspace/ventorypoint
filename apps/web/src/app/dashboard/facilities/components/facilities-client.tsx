@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { Plus, Search, Building, MapPin, Clock, X, Trash2, Edit2, LocateFixed, AlertTriangle, CheckCircle2 } from "lucide-react";
-import { createFacility, deleteFacility, updateFacility, geocodeAddress } from "../actions";
+import { createFacility, deleteFacility, updateFacility, geocodeAddress, reverseGeocode } from "../actions";
 import { toast } from "sonner";
 import { ActionDropdown } from "@/components/ui/action-dropdown";
 import { TablePagination } from "@/components/ui/table-pagination";
@@ -108,6 +108,8 @@ export function FacilitiesClient({
   const [hours, setHours] = useState<Hours>(defaultHours());
   const [cutoffs, setCutoffs] = useState<Cutoff[]>([]);
   const [isGeocoding, setIsGeocoding] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
+  const [locationNote, setLocationNote] = useState<string | null>(null);
 
   function loadFormExtras(f: Facility | null) {
     setAddress(f?.address ?? "");
@@ -127,29 +129,96 @@ export function FacilitiesClient({
     );
     setHours(f?.operating_hours && Object.keys(f.operating_hours).length ? { ...defaultHours(), ...f.operating_hours } : defaultHours());
     setCutoffs(f?.carrier_cutoffs ?? []);
+    setLocationNote(null);
   }
 
   async function handleVerifyAddress() {
-    const query = [address, geo.city, geo.state, geo.zip_code].filter(Boolean).join(", ");
+    setLocationNote(null);
     setIsGeocoding(true);
-    const res = await geocodeAddress(query);
+    const res = await geocodeAddress({ street: address, city: geo.city, state: geo.state, zip: geo.zip_code });
     setIsGeocoding(false);
     if (!res.ok) {
       setGeo((g) => ({ ...g, geocode_status: "unverified" }));
       toast.error(res.error);
       return;
     }
-    setGeo({
-      city: res.city ?? "",
-      state: res.state ?? "",
-      zip_code: res.zip_code ?? "",
-      county: res.county ?? "",
-      country: res.country ?? "",
+    // Keep what the user typed; fill the gaps from the lookup.
+    setGeo((g) => ({
+      city: g.city || res.city || "",
+      state: g.state || res.state || "",
+      zip_code: g.zip_code || res.zip_code || "",
+      county: g.county || res.county || "",
+      country: res.country ?? g.country,
       latitude: res.latitude.toFixed(6),
       longitude: res.longitude.toFixed(6),
-      geocode_status: "verified",
-    });
-    toast.success("Address found. Confirm the pin on the map.");
+      geocode_status: res.precision === "exact" ? "verified" : "manual",
+    }));
+    if (res.precision === "exact") {
+      toast.success("Address found. Confirm the pin on the map.");
+    } else {
+      setLocationNote("Only the area was found, not the exact street. Use your current location at the warehouse, or adjust the coordinates.");
+      toast.warning("Found the area, not the exact address.");
+    }
+  }
+
+  // Browser geolocation: the browser asks the user for permission on first use.
+  function handleUseMyLocation() {
+    setLocationNote(null);
+    if (typeof navigator === "undefined" || !("geolocation" in navigator)) {
+      toast.error("This browser can't share its location. Enter the coordinates manually.");
+      return;
+    }
+    if (!window.isSecureContext) {
+      toast.error("Location only works over HTTPS (or on localhost).");
+      return;
+    }
+
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude, accuracy } = pos.coords;
+        setGeo((g) => ({ ...g, latitude: latitude.toFixed(6), longitude: longitude.toFixed(6), geocode_status: "manual" }));
+
+        // Fill the address from the coordinates, without overwriting anything typed.
+        const res = await reverseGeocode(latitude, longitude);
+        setIsLocating(false);
+        if (res.ok) {
+          if (!address.trim() && res.street) setAddress(res.street);
+          setGeo((g) => ({
+            ...g,
+            city: g.city || res.city || "",
+            state: g.state || res.state || "",
+            zip_code: g.zip_code || res.zip_code || "",
+            county: g.county || res.county || "",
+            country: g.country || res.country || "",
+            geocode_status: accuracy <= 100 ? "verified" : "manual",
+          }));
+        }
+
+        if (accuracy > 100) {
+          setLocationNote(
+            `Your browser placed you within about ${Math.round(accuracy)} m. Computers often estimate location from Wi-Fi; for a precise pin, do this on a phone at the warehouse or adjust the coordinates.`
+          );
+          toast.warning("Location found, but it may not be precise.");
+        } else {
+          toast.success(`Location found (±${Math.round(accuracy)} m). Confirm the pin on the map.`);
+        }
+      },
+      (err) => {
+        setIsLocating(false);
+        if (err.code === err.PERMISSION_DENIED) {
+          setLocationNote(
+            "Location access is blocked for this site. Click the lock or site-settings icon in the address bar, allow Location, then try again."
+          );
+          toast.error("Location permission was denied.");
+        } else if (err.code === err.TIMEOUT) {
+          toast.error("Finding your location took too long. Try again, or enter coordinates manually.");
+        } else {
+          toast.error("Your location isn't available right now. Check that location services are on for this device.");
+        }
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    );
   }
 
   const hasCoords = geo.latitude !== "" && geo.longitude !== "" && !isNaN(Number(geo.latitude)) && !isNaN(Number(geo.longitude));
@@ -523,16 +592,36 @@ export function FacilitiesClient({
                         : "Not verified yet."}
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleVerifyAddress}
-                    disabled={isGeocoding}
-                    className="flex items-center gap-2 px-3 py-2 text-sm font-medium border border-border rounded-md hover:bg-gray-50 dark:hover:bg-white/10 disabled:opacity-50 cursor-pointer"
-                  >
-                    <LocateFixed className="w-4 h-4" />
-                    {isGeocoding ? "Verifying..." : "Verify address"}
-                  </button>
+                  <div className="flex flex-wrap justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={handleVerifyAddress}
+                      disabled={isGeocoding || isLocating}
+                      className="inline-flex h-9 items-center gap-2 rounded-md border border-input px-3 text-sm font-semibold text-foreground transition-colors hover:border-brand hover:bg-brand hover:text-white disabled:opacity-45 cursor-pointer"
+                    >
+                      <Search className="w-4 h-4" />
+                      {isGeocoding ? "Checking…" : "Verify address"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleUseMyLocation}
+                      disabled={isGeocoding || isLocating}
+                      className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-45 cursor-pointer"
+                    >
+                      <LocateFixed className={`w-4 h-4 ${isLocating ? "animate-pulse" : ""}`} />
+                      {isLocating ? "Locating…" : "Use my current location"}
+                    </button>
+                  </div>
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  Standing at the warehouse? Use your current location. Your browser will ask for permission first.
+                </p>
+                {locationNote && (
+                  <p role="status" className="flex items-start gap-1.5 rounded-md bg-warning-soft px-3 py-2 text-xs text-warning-text">
+                    <AlertTriangle className="mt-0.5 w-3.5 h-3.5 shrink-0" />
+                    {locationNote}
+                  </p>
+                )}
 
                 {mapSrc && (
                   <iframe
