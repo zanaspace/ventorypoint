@@ -14,9 +14,9 @@ export default async function SettingsPage() {
     redirect("/onboarding");
   }
 
-  // Only owner, admin, or billing can access settings
+  // Organization settings: owner, admin, billing. Ops managers and supervisors land on Devices.
   if (!["owner", "admin", "billing"].includes(context.role)) {
-    redirect("/dashboard");
+    redirect(["ops_manager", "supervisor"].includes(context.role) ? "/dashboard/settings/devices" : "/dashboard");
   }
 
   const supabase = await createClient();

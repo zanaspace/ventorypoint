@@ -278,8 +278,9 @@ begin
   raise notice '✓ TEST 5 PASSED: Future and >72h events rejected; supervisor back-dating recorded with approver.';
 
   -- ---------------------------------------------------------------
-  -- TEST 6: Floor sessions and devices
+  -- TEST 6: Floor sessions and devices (strict mode: approval required)
   -- ---------------------------------------------------------------
+  update public.organizations set require_device_approval = true where id = v_org_a;
   perform set_config('request.jwt.claims', '', true);
   set local role anon;
   v_login := floor_worker_login('vp_badge_test_wes', '1234', 'device-uuid-terminal-01');
@@ -585,6 +586,115 @@ begin
   perform record_floor_event(v_token, '{"event_type":"system.synthetic","idempotency_key":"block-key-0003"}');
   reset role;
   raise notice '✓ TEST 11 PASSED: Block records who/when, ends sessions, rejects scans as device_blocked; unblock restores.';
+
+  -- ---------------------------------------------------------------
+  -- TEST 12: Trust on first use (default) and one-time facility choice
+  -- ---------------------------------------------------------------
+  update public.organizations set require_device_approval = false where id = v_org_a;
+  perform set_config('request.jwt.claims', '', true);
+
+  -- 12.1 Worker with one facility: new terminal is approved and assigned, scans immediately
+  set local role anon;
+  v_login := floor_worker_login('vp_badge_test_wes', '1234', 'tofu-device-0001');
+  v_id := record_floor_event(v_login ->> 'session_token',
+    '{"event_type":"system.synthetic","idempotency_key":"tofu-key-0001"}');
+  reset role;
+  if not (v_login -> 'device' ->> 'is_authorized')::boolean
+     or (v_login -> 'device' ->> 'facility_id')::uuid <> v_fac_a1
+     or (select facility_id from public.warehouse_events where id = v_id) <> v_fac_a1 then
+    raise exception 'TEST 12.1 FAILED: first-use terminal should be approved, assigned to A-1 and scan: %', v_login;
+  end if;
+
+  -- 12.2 Worker with several facilities: approved, but the terminal must pick a warehouse once
+  declare
+    v_alex uuid := gen_random_uuid();
+    v_alex_member uuid;
+    v_alex_token text;
+    v_session jsonb;
+  begin
+    insert into public.profiles (id, first_name, last_name) values (v_alex, 'Alex', 'Allsites');
+    insert into public.organization_members (organization_id, user_id, role, is_active, all_facilities)
+      values (v_org_a, v_alex, 'floor_worker', true, true) returning id into v_alex_member;
+    insert into public.floor_worker_credentials (organization_id, member_id, worker_code, badge_token, pin_hash)
+      values (v_org_a, v_alex_member, 'W-002', 'vp_badge_test_alex', hash_worker_pin('2468'));
+
+    set local role anon;
+    v_login := floor_worker_login('vp_badge_test_alex', '2468', 'tofu-device-0002');
+    v_alex_token := v_login ->> 'session_token';
+    v_session := get_floor_session(v_alex_token);
+    reset role;
+    if not (v_login -> 'device' ->> 'is_authorized')::boolean or v_login -> 'device' ->> 'facility_id' is not null
+       or jsonb_array_length(v_session -> 'device' -> 'facility_choices') <> 2 then
+      raise exception 'TEST 12.2 FAILED: multi-facility worker should get an approved terminal with 2 facility choices: %', v_session;
+    end if;
+
+    v_hint := null;
+    begin
+      set local role anon;
+      perform record_floor_event(v_alex_token, '{"event_type":"system.synthetic","idempotency_key":"tofu-key-0002"}');
+    exception when others then get stacked diagnostics v_hint = pg_exception_hint;
+    end;
+    reset role;
+    if v_hint is distinct from 'facility_required' then raise exception 'TEST 12.2 FAILED: scan before facility choice (%)', v_hint; end if;
+
+    set local role anon;
+    perform set_floor_device_facility(v_alex_token, v_fac_a2);
+    v_id := record_floor_event(v_alex_token, '{"event_type":"system.synthetic","idempotency_key":"tofu-key-0003"}');
+    reset role;
+    if (select facility_id from public.warehouse_events where id = v_id) <> v_fac_a2 then
+      raise exception 'TEST 12.2 FAILED: event should be recorded at the chosen facility A-2';
+    end if;
+
+    -- The terminal can't change its own warehouse afterwards
+    v_hint := null;
+    begin
+      set local role anon;
+      perform set_floor_device_facility(v_alex_token, v_fac_a1);
+    exception when others then get stacked diagnostics v_hint = pg_exception_hint;
+    end;
+    reset role;
+    if v_hint is distinct from 'facility_already_set' then raise exception 'TEST 12.2 FAILED: facility changed twice (%)', v_hint; end if;
+  end;
+
+  -- 12.3 Worker can't choose a facility they have no access to
+  set local role anon;
+  v_login := floor_worker_login('vp_badge_test_wes', '1234', 'tofu-device-0003');
+  reset role;
+  update public.floor_devices set facility_id = null where device_token = 'tofu-device-0003';
+  v_hint := null;
+  begin
+    set local role anon;
+    perform set_floor_device_facility(v_login ->> 'session_token', v_fac_a2);
+  exception when others then get stacked diagnostics v_hint = pg_exception_hint;
+  end;
+  reset role;
+  if v_hint is distinct from 'scope_denied' then raise exception 'TEST 12.3 FAILED: worker chose A-2 (%)', v_hint; end if;
+
+  -- 12.4 Strict mode leaves new terminals pending; switching it off approves them at next sign-in
+  update public.organizations set require_device_approval = true where id = v_org_a;
+  set local role anon;
+  v_login := floor_worker_login('vp_badge_test_wes', '1234', 'tofu-device-0004');
+  reset role;
+  if (v_login -> 'device' ->> 'is_authorized')::boolean then raise exception 'TEST 12.4 FAILED: strict org auto-approved'; end if;
+  update public.organizations set require_device_approval = false where id = v_org_a;
+  set local role anon;
+  v_login := floor_worker_login('vp_badge_test_wes', '1234', 'tofu-device-0004');
+  reset role;
+  if not (v_login -> 'device' ->> 'is_authorized')::boolean then raise exception 'TEST 12.4 FAILED: pending device not approved after strict mode was turned off'; end if;
+
+  -- 12.5 Blocked devices stay blocked even in the default mode
+  perform set_config('request.jwt.claims', json_build_object('sub', v_super_a, 'role', 'authenticated')::text, true);
+  set local role authenticated;
+  perform update_device((select id from public.floor_devices where device_token = 'tofu-device-0001'), null, null, false);
+  reset role;
+  perform set_config('request.jwt.claims', '', true);
+  set local role anon;
+  v_login := floor_worker_login('vp_badge_test_wes', '1234', 'tofu-device-0001');
+  reset role;
+  if (v_login -> 'device' ->> 'is_authorized')::boolean or not (v_login -> 'device' ->> 'is_blocked')::boolean then
+    raise exception 'TEST 12.5 FAILED: blocked device was re-approved at sign-in: %', v_login;
+  end if;
+  raise notice '✓ TEST 12 PASSED: New terminals scan immediately (facility auto-assigned or chosen once); strict mode, scope and blocks respected.';
 
   raise notice '=======================================================';
   raise notice '>>> ALL SPRINT 2 · STEP 2 EVENT WRITE API TESTS PASSED <<<';

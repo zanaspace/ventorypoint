@@ -16,7 +16,12 @@ export default async function DevicesPage() {
   if (!DEVICE_MANAGERS.includes(context.role)) redirect("/dashboard");
 
   const supabase = await createClient();
-  const { data } = await supabase
+  const { data: org } = await supabase
+    .from("organizations")
+    .select("require_device_approval")
+    .eq("id", context.activeOrg.id)
+    .single();
+  const { data, error } = await supabase
     .from("floor_devices")
     .select("id, device_name, device_type, facility_id, is_authorized, blocked_at, retired_at, last_active_at, created_at")
     .eq("organization_id", context.activeOrg.id)
@@ -26,6 +31,9 @@ export default async function DevicesPage() {
     <DevicesClient
       devices={(data ?? []) as DeviceRow[]}
       facilities={context.facilities.map((f) => ({ id: f.id, name: f.name, code: f.code }))}
+      requireApproval={Boolean(org?.require_device_approval)}
+      canConfigure={["owner", "admin"].includes(context.role)}
+      loadError={error ? "Devices couldn't be loaded. The database may be missing a migration; ask an admin to run the latest migrations." : null}
     />
   );
 }

@@ -100,9 +100,9 @@ Admin Event Deliveries view: per-consumer lag, failures and a replay button.
 
 3.5 Devices & Stations
 
-Browser device registration: a persistent device UUID in local storage + a server devices row (name, type, facility, last_seen). Supervisors can rename or retire devices.
+Browser device registration: a persistent device UUID in local storage + a server devices row (name, type, facility, last_seen). A terminal registers itself on the first badge + PIN sign-in and can record scans immediately (trust on first use, Decision 1.2.4); its facility is assigned automatically when the worker has one facility, otherwise the terminal asks once. Organizations can require supervisor approval for new terminals instead. Supervisors can rename, re-assign, block and retire devices.
 
-Every event records device_id, and unknown devices are rejected for floor event types.
+Every floor event records device_id. Floor event types are rejected from unregistered, blocked, retired or (when approval is required) unapproved devices.
 
 3.6 Configuration Audit Log
 

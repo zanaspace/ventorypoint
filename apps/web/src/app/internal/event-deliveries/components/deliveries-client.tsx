@@ -4,21 +4,17 @@ import { useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
-import { Activity, AlertOctagon, CheckCircle2, PauseCircle, RefreshCw, RotateCcw, Timer } from "lucide-react";
+import { Activity, AlertOctagon, PauseCircle, RefreshCw, RotateCcw, Timer } from "lucide-react";
 import { replayAllDead, replayDelivery } from "../actions";
 
-export interface ConsumerStats {
+export interface ConsumerHealth {
   consumer: string;
   description: string;
   is_enabled: boolean;
-  pending: number;
-  processing: number;
-  retrying: number;
+  backlog: number;
   dead: number;
-  succeeded_24h: number;
   lag_seconds: number;
   lag_alert_seconds: number;
-  last_success_at: string | null;
 }
 
 export interface ProblemDelivery {
@@ -29,7 +25,8 @@ export interface ProblemDelivery {
   last_error: string | null;
   next_attempt_at: string;
   updated_at: string;
-  warehouse_events: { event_type: string; occurred_at: string; idempotency_key: string } | null;
+  organizations: { name: string } | null;
+  warehouse_events: { event_type: string; occurred_at: string } | null;
 }
 
 function formatLag(seconds: number) {
@@ -40,7 +37,7 @@ function formatLag(seconds: number) {
 
 const label = (name: string) => name.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());
 
-export function DeliveriesClient({ stats, problems }: { stats: ConsumerStats[]; problems: ProblemDelivery[] }) {
+export function DeliveriesClient({ stats, problems }: { stats: ConsumerHealth[]; problems: ProblemDelivery[] }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -62,9 +59,9 @@ export function DeliveriesClient({ stats, problems }: { stats: ConsumerStats[]; 
     <div className="flex flex-col gap-6 max-w-7xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <h1 className="font-heading text-3xl font-medium tracking-tight text-foreground">Event deliveries</h1>
+          <h1 className="font-heading text-3xl font-medium tracking-tight text-foreground">Event pipeline</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Every warehouse event is delivered to the back-end services below. Failures retry automatically; dead deliveries need a replay.
+            Back-end consumers across all customers. Failures retry automatically; dead deliveries need a fix and a replay.
           </p>
         </div>
         <button
@@ -81,7 +78,7 @@ export function DeliveriesClient({ stats, problems }: { stats: ConsumerStats[]; 
         <h2 id="consumers-heading" className="eyebrow">Consumers</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {stats.map((s) => {
-            const backlog = Number(s.pending) + Number(s.processing) + Number(s.retrying);
+            const backlog = Number(s.backlog);
             const lagging = s.is_enabled && backlog > 0 && s.lag_seconds > s.lag_alert_seconds;
             return (
               <div key={s.consumer} className="flex flex-col gap-4 rounded-xl border border-border bg-card p-5">
@@ -101,14 +98,10 @@ export function DeliveriesClient({ stats, problems }: { stats: ConsumerStats[]; 
                   )}
                 </div>
 
-                <dl className="grid grid-cols-3 gap-3 text-center">
+                <dl className="grid grid-cols-2 gap-3 text-center">
                   <div className="rounded-lg bg-surface p-2">
                     <dt className="text-[11px] font-semibold text-muted-foreground">Queued</dt>
                     <dd className="font-heading text-xl tabular-nums text-foreground">{backlog}</dd>
-                  </div>
-                  <div className="rounded-lg bg-surface p-2">
-                    <dt className="text-[11px] font-semibold text-muted-foreground">Retrying</dt>
-                    <dd className={`font-heading text-xl tabular-nums ${Number(s.retrying) > 0 ? "text-warning-text" : "text-foreground"}`}>{s.retrying}</dd>
                   </div>
                   <div className="rounded-lg bg-surface p-2">
                     <dt className="text-[11px] font-semibold text-muted-foreground">Dead</dt>
@@ -122,18 +115,13 @@ export function DeliveriesClient({ stats, problems }: { stats: ConsumerStats[]; 
                     Lag {backlog > 0 ? formatLag(s.lag_seconds) : "0s"}
                     {lagging && ` (alert above ${formatLag(s.lag_alert_seconds)})`}
                   </span>
-                  <span className="inline-flex items-center gap-1">
-                    <CheckCircle2 className="size-3.5" strokeWidth={1.75} />
-                    {s.succeeded_24h} in 24h
-                    {s.last_success_at && ` · last ${formatDistanceToNow(new Date(s.last_success_at), { addSuffix: true })}`}
-                  </span>
                 </div>
 
                 {Number(s.dead) > 0 && (
                   <button
                     type="button"
                     disabled={isPending}
-                    onClick={() => run(() => replayAllDead(s.consumer), (n) => `${n ?? 0} deliveries sent back to the queue.`)}
+                    onClick={() => run(() => replayAllDead(s.consumer), (n) => `${n ?? 0} deliveries sent back to the queue across all organizations.`)}
                     className="inline-flex h-9 items-center justify-center gap-2 rounded-md bg-primary px-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-45"
                   >
                     <RotateCcw className="size-4" /> Replay {s.dead} dead
@@ -160,6 +148,7 @@ export function DeliveriesClient({ stats, problems }: { stats: ConsumerStats[]; 
               <thead>
                 <tr className="border-b border-border bg-surface text-xs font-semibold text-muted-foreground">
                   <th className="px-5 py-3">Event</th>
+                  <th className="px-5 py-3">Organization</th>
                   <th className="px-5 py-3">Consumer</th>
                   <th className="px-5 py-3">Status</th>
                   <th className="px-5 py-3">Last error</th>
@@ -175,6 +164,7 @@ export function DeliveriesClient({ stats, problems }: { stats: ConsumerStats[]; 
                         {p.warehouse_events && formatDistanceToNow(new Date(p.warehouse_events.occurred_at), { addSuffix: true })}
                       </div>
                     </td>
+                    <td className="px-5 py-3 text-sm">{p.organizations?.name ?? "—"}</td>
                     <td className="px-5 py-3 text-sm">{label(p.consumer)}</td>
                     <td className="px-5 py-3">
                       {p.status === "dead" ? (

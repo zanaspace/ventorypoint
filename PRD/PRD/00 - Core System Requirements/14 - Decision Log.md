@@ -316,6 +316,20 @@ Before P1 S2
 
 Open
 
+1.2.4
+
+New floor terminals: must a supervisor approve each one before it can record scans, or can workers scan as soon as they sign in on it?
+
+Decided (2026-10-09): trust on first use by default. The first badge + PIN sign-in registers and activates the terminal; its warehouse is set automatically when the worker has one, otherwise the terminal asks once. Organizations can turn on "Require approval for new terminals" for stricter control. Supervisors can block or retire a device at any time, which signs everyone out of it.
+
+Product owner
+
+Before P1 S2
+
+
+
+Decided
+
 1.02A.1
 
 Analytics tool: PostHog (recommended, US cloud) vs an alternative your team already uses.

@@ -14,7 +14,7 @@ Legend: `[x]` done · `[~]` partial · `[ ]` not started
 
 | Sprint | Status | Tasks done | Partial | Acceptance criteria passing |
 |---|---|---|---|---|
-| **Sprint 2** — Event Backbone, Realtime & Audit Log | **In progress** (Steps 1–3 done) | 10 of 14 | 1 (worker scheduling) | 3 of 5 |
+| **Sprint 2** — Event Backbone, Realtime & Audit Log | **Built — awaiting live measurement** | 13 of 14 | 2 (worker scheduling, load test run) | 4 of 5 (+1 needs live Supabase) |
 | **Sprint 02A** — Internal Admin, Platform Billing, Notifications & Analytics | **Not started** | 0 of 15 | 1 (header bell placeholder) | 0 of 6 |
 
 What already exists and can be reused:
@@ -67,11 +67,11 @@ Migration: `supabase/migrations/20261009130000_event_write_api.sql` · Tests: `s
 - [x] **2.2 Batches**: `record_events` / `record_floor_events`, up to 100 events, each succeeds or fails on its own, with per-event `created` / `duplicate` / `error` results.
 - [x] **2.3 Devices**
   - [x] `floor_devices` extended: `device_type`, `retired_at`, `registered_by`, `updated_at`; writes only through RPCs (direct table writes revoked); supervisors can view.
-  - [x] Unknown devices are auto-registered as **unapproved** at floor login; supervisors+ `register_device`, `update_device` (rename, facility, approve/block), `retire_device`. Blocking or retiring ends that device's floor sessions.
+  - [x] **Trust on first use (Decision 1.2.4):** the first badge + PIN sign-in registers **and activates** a terminal, so workers scan immediately. Warehouse auto-assigned when the worker has one; otherwise the terminal asks once (`set_floor_device_facility`, can't be changed from the terminal afterwards). Optional per-org `require_device_approval` restores approve-first. Supervisors+ `register_device`, `update_device` (rename, facility, approve, block/unblock), `retire_device`; blocking or retiring ends that device's sessions. Migration `20261009170000_device_trust_on_first_use.sql`, write API TEST 12.
   - [x] Floor event types are rejected without an approved device of the same organization; `device_id` recorded on every floor event.
   - [x] Last seen updated at most once a minute per device.
   - [x] `useDeviceId()` hook: persistent browser UUID in `localStorage`, sent at floor login.
-  - [x] Devices page (`/dashboard/devices`, owner/admin/ops manager/supervisor): approve, rename, assign facility, block, retire, register this browser.
+  - [x] Devices page at **Settings → Devices** (`/dashboard/settings/devices`; owner/admin/ops manager/supervisor): rename, assign warehouse, approve (strict mode), block/unblock, retire, register this browser; owners/admins toggle "Require approval for new terminals".
 - [x] **Security fix: floor sessions.** The `vp_floor_session` cookie held unsigned JSON (worker/org IDs) that could be edited to impersonate any worker in any organization. It now holds an opaque 256-bit token; only its SHA-256 is stored in `floor_sessions` (12h expiry, revocable). The terminal reads identity through `get_floor_session`; logout calls `end_floor_session`.
 - [x] Typed app helpers: `recordEvent`, `recordEvents`, `recordFloorEvent`, `recordFloorEvents` with an `EventErrorCode` union; `submitFloorEvents` server action for the Sprint 6 floor workspace.
 
@@ -91,29 +91,34 @@ Migration: `supabase/migrations/20261009150000_realtime_and_queue.sql` · Tests:
   - [x] Consumer-side idempotency: `consumer_processed_events` + `mark_event_processed()`.
   - [x] Worker: `runEventWorker()` with a consumer handler registry; `/api/internal/event-worker` (GET/POST, `Authorization: Bearer $EVENT_WORKER_SECRET`, timing-safe check, 45s budget).
   - [ ] **Schedule the worker.** Set `EVENT_WORKER_SECRET` (≥ 32 chars) and call the endpoint from pg_cron + pg_net, Vercel Cron or another scheduler. A once-a-minute cron can't meet the 5s lag target. Decide the runtime (open question) before consumers with tight lag (inventory projection) go live.
-- [x] **3.3 Event Deliveries view** (`/dashboard/event-deliveries`, owners/admins): per-consumer queued / retrying / dead / lag (alert colour above the consumer's threshold) / processed in 24h, failed-delivery list with last error, **Replay** per delivery and **Replay all dead** per consumer. Auto-refreshes every 15s.
+- [x] **3.3 Event Deliveries view**: staff-only **Event pipeline** at `/internal/event-deliveries` (cross-customer, gated by `PLATFORM_ADMIN_EMAILS` until the Sprint 02A internal console): per-consumer queued / retrying / dead / lag (alert colour above the consumer's threshold) / processed in 24h, failed-delivery list with last error, **Replay** per delivery and **Replay all dead** per consumer. Auto-refreshes every 15s.
 
-## Step 4 — Audit Log, Load Test & Sign-Off
+## Step 4 — Audit Log, Load Test & Sign-Off (built; live measurements pending)
 
-- [ ] **4.1 Configuration audit log**
-  - [ ] `audit_log` table: `table_name`, `row_id`, `action`, `before jsonb`, `after jsonb`, `actor_user_id`, `organization_id`, `created_at` (append-only, same immutability rules).
-  - [ ] Generic `audit_row_change()` trigger attached to all Sprint 1 configuration tables: `organizations`, `facilities`, `client_accounts`, `client_facilities`, `organization_members`, `member_facility_access`, `invitations`, `floor_worker_credentials`, `floor_devices`.
-  - [ ] RLS: admins/owners read their org's audit rows only.
-  - [ ] Audit viewer page for Admins (e.g. `/dashboard/settings/audit`), filterable by table, user and date range, showing before/after diffs.
+Migration: `supabase/migrations/20261009160000_audit_log.sql` · Tests: `supabase/tests/audit_log_suite.sql` (7 tests) · App: `src/app/dashboard/audit-log/`, `src/app/dashboard/dev/events/`, `apps/web/scripts/load-test-events.mjs`
+
+- [x] **4.1 Configuration audit log**
+  - [x] `audit_log`: table, row, action, changed fields, before/after JSON, actor, JWT role, org, time. Append-only for everyone (incl. `service_role`); no FK so entries outlive deleted rows.
+  - [x] Generic `audit_row_change()` trigger on `organizations`, `facilities`, `client_accounts`, `client_facilities`, `organization_members`, `member_facility_access`, `invitations`, `floor_worker_credentials`, `floor_devices`.
+  - [x] Secrets redacted but still recorded as changed: invitation `token`/`invite_code`/`code_hash`, `badge_token`, `pin_hash`, `device_token`.
+  - [x] Bookkeeping ignored (`updated_at`, device `last_active_at`, login `failed_attempts`/`last_signed_in_at`); lockouts (`locked_until`) still logged.
+  - [x] Changes made through security definer RPCs keep the real actor.
+  - [x] RLS: owners/admins of the org read; nobody writes directly.
+  - [x] **Settings → Change history** (`/dashboard/settings/audit-log`, owners/admins): filter by setting, person and date range; shows old → new per field; paginated, URL-shareable filters.
 - [ ] **4.2 Load & chaos tests**
-  - [ ] 200 events/second sustained per facility, consumer lag ≤ 5s.
-  - [x] Consumer stopped 10 min → restarted: no loss, no double-processing (queue TEST 8, 300 events).
-  - [ ] 10,000 events with 5% duplicate keys → exactly 9,500 stored.
-- [ ] **4.3 Developer event console**: internal page to emit synthetic events and watch realtime fan-out and deliveries.
-- [ ] **4.4 RLS tests**: extend `supabase/tests/` for `warehouse_events`, `event_type_registry`, the device table, the delivery tables and `audit_log` (cross-org isolation, facility scoping, immutability).
+  - [ ] 200 events/s sustained per facility, consumer lag ≤ 5s: run `apps/web/scripts/load-test-events.mjs` against staging (script reports throughput, batch/single p50/p95, duplicates and consumer lag). Needs a real Supabase project and the worker running continuously.
+  - [x] Consumer outage/restart, no loss, no double-processing (queue TEST 8).
+  - [x] 10,000 events with 5% duplicate keys → 9,500 (write API TEST 2).
+- [x] **4.3 Developer event console**: staff-only at `/internal/event-console` (also off in production unless `ENABLE_DEV_CONSOLE=true`): emit 1–100 events of any type with a custom payload, live Realtime feed, end-to-end latency p50/p95 against the 500 ms target.
+- [x] **4.4 RLS tests** for every new table: `warehouse_events`, `event_type_registry`, `event_idempotency_keys`, `floor_devices`, `floor_sessions`, `event_consumers`, `event_deliveries`, `consumer_processed_events`, `realtime.messages` policy, `audit_log`.
 
 ## Sprint 2 — Acceptance Criteria
 
 - [x] 10,000 synthetic events with 5% duplicate idempotency keys → exactly 9,500 unique events (write API TEST 2).
-- [ ] Browser subscribed to Facility 1 receives an event in < 500ms (p95); a browser in another org receives nothing.
+- [~] Browser subscribed to Facility 1 receives an event in < 500ms (p95); a browser in another org receives nothing. Isolation passes (queue TEST 2); latency must be measured on live Supabase with the Event console.
 - [x] Consumer stopped 10 min then restarted → all queued events processed, no loss, no double-processing (queue TEST 8).
 - [x] Any UPDATE/DELETE on `warehouse_events` fails, **including via the service role** (TEST 3).
-- [ ] Editing a facility's cutoff time creates an audit entry with old value, new value and editor.
+- [x] Editing a facility's cutoff time creates an audit entry with old value, new value and editor (audit TEST 1).
 
 ## Sprint 2 — Non-Functional Targets
 
@@ -224,7 +229,7 @@ Migration: `supabase/migrations/20261009150000_realtime_and_queue.sql` · Tests:
 
 ## Sprint 2 / 02A Sign-Off Status: IN PROGRESS
 
-- Sprint 2: Steps 1–3 complete. 3 of 5 acceptance criteria pass (9,500 of 10,000; append-only; outage/restart). Realtime p95 < 500ms needs a live Supabase measurement; audit log is Step 4.
+- Sprint 2: all four steps built. 4 of 5 acceptance criteria pass in tests. Remaining: realtime p95 < 500 ms and the 200 events/s load test must be measured on a real Supabase project (use the Event console and the load test script), then sign-off.
 - Sprint 02A: 0 of 6 acceptance criteria pass.
 
 ## Found During Step 1
@@ -234,3 +239,10 @@ Migration: `supabase/migrations/20261009150000_realtime_and_queue.sql` · Tests:
   - Calls `get_user_role(org, user)` and `can_manage_member(user, member)`, but only one-argument versions exist (they read `auth.uid()`).
   - Needs a rewrite that switches role/JWT claims like `event_store_suite.sql` does, before Sprint 1 can claim an automated RLS suite.
 - Tests run locally in an in-process Postgres 17 (PGlite) with Supabase auth/role stubs. Run them against a real Supabase instance (`supabase db reset` then `psql -f supabase/tests/event_store_suite.sql`) before sign-off.
+
+## Navigation & Access (2026-10-09)
+
+- Customer sidebar holds daily work only: Dashboard, Facilities, Clients, Members (+ Floor Terminal link, Settings).
+- **Settings** sections, by role: Organization (owner/admin/billing), Devices (owner/admin/ops manager/supervisor), Change history (owner/admin).
+- **`/internal`** is for platform staff only (Event pipeline, Event console). Interim gate: verified email in `PLATFORM_ADMIN_EMAILS` (comma-separated); everyone else gets a 404. Every internal page and action re-checks access. Replace with Sprint 02A staff roles + MFA.
+- Environment variables to set: `PLATFORM_ADMIN_EMAILS`, `EVENT_WORKER_SECRET` (≥ 32 chars), optional `ENABLE_DEV_CONSOLE=true` for the console in production.

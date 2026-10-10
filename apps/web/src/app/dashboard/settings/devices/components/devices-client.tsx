@@ -19,7 +19,7 @@ import { Modal } from "@/components/ui/modal";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { ActionDropdown } from "@/components/ui/action-dropdown";
 import { useDeviceId } from "@/lib/device-id";
-import { registerDevice, retireDevice, updateDevice } from "../actions";
+import { registerDevice, retireDevice, setRequireDeviceApproval, updateDevice } from "../actions";
 
 export interface DeviceRow {
   id: string;
@@ -62,8 +62,8 @@ const STATUS_ORDER: Record<Status, number> = { pending: 0, blocked: 1, no_facili
 function StatusBadge({ status }: { status: Status }) {
   const styles: Record<Status, { cls: string; label: string; Icon: typeof Clock }> = {
     pending: { cls: "bg-warning-soft text-warning-text", label: "Waiting for approval", Icon: Clock },
-    no_facility: { cls: "bg-warning-soft text-warning-text", label: "No facility", Icon: AlertTriangle },
-    approved: { cls: "bg-success-soft text-success-text", label: "Approved", Icon: CheckCircle2 },
+    no_facility: { cls: "bg-warning-soft text-warning-text", label: "No warehouse yet", Icon: AlertTriangle },
+    approved: { cls: "bg-success-soft text-success-text", label: "Active", Icon: CheckCircle2 },
     blocked: { cls: "bg-danger-soft text-danger-text", label: "Blocked", Icon: ShieldOff },
     retired: { cls: "bg-muted text-muted-foreground", label: "Retired", Icon: Ban },
   };
@@ -84,7 +84,19 @@ interface EditState {
   facilityId: string;
 }
 
-export function DevicesClient({ devices, facilities }: { devices: DeviceRow[]; facilities: FacilityOption[] }) {
+export function DevicesClient({
+  devices,
+  facilities,
+  requireApproval,
+  canConfigure,
+  loadError,
+}: {
+  devices: DeviceRow[];
+  facilities: FacilityOption[];
+  requireApproval: boolean;
+  canConfigure: boolean;
+  loadError?: string | null;
+}) {
   const deviceId = useDeviceId();
   const [editing, setEditing] = useState<EditState | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -126,7 +138,7 @@ export function DevicesClient({ devices, facilities }: { devices: DeviceRow[]; f
             deviceType: editing.deviceType,
             facilityId: editing.facilityId || null,
           }),
-        "This browser is registered as an approved device."
+        "This browser is registered as an active device."
       );
     } else if (editing.device) {
       run(
@@ -149,13 +161,14 @@ export function DevicesClient({ devices, facilities }: { devices: DeviceRow[]; f
   }
 
   return (
-    <div className="flex flex-col gap-6 max-w-7xl mx-auto">
+    <div className="flex flex-col gap-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
           <h1 className="font-heading text-3xl font-medium tracking-tight text-foreground">Devices</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Floor terminals, scanners and stations. Only approved devices assigned to a facility can record scans.
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+            Floor terminals register themselves the first time a worker signs in with their badge. Use this page to rename them,
+            change their warehouse, or block one that&apos;s lost or broken.
           </p>
         </div>
         <button
@@ -171,6 +184,49 @@ export function DevicesClient({ devices, facilities }: { devices: DeviceRow[]; f
         </button>
       </div>
 
+      {loadError && (
+        <div role="alert" className="flex items-start gap-3 rounded-xl border border-destructive/30 bg-danger-soft p-4">
+          <AlertTriangle className="mt-0.5 size-5 shrink-0 text-danger-text" strokeWidth={1.75} />
+          <p className="text-sm font-medium text-danger-text">{loadError}</p>
+        </div>
+      )}
+
+      {canConfigure && (
+        <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p id="approval-label" className="text-sm font-semibold text-foreground">Require approval for new terminals</p>
+            <p id="approval-desc" className="text-sm text-muted-foreground">
+              {requireApproval
+                ? "On: a supervisor must approve each new terminal before it can record scans."
+                : "Off: workers can scan as soon as they sign in on a new terminal. Turn on for stricter control."}
+            </p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={requireApproval}
+            aria-labelledby="approval-label"
+            aria-describedby="approval-desc"
+            disabled={isPending}
+            onClick={() =>
+              run(
+                () => setRequireDeviceApproval(!requireApproval),
+                !requireApproval ? "New terminals now need approval." : "New terminals can scan right away."
+              )
+            }
+            className={`relative h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors disabled:opacity-45 ${
+              requireApproval ? "bg-brand" : "bg-input"
+            }`}
+          >
+            <span
+              className={`absolute left-[3px] top-[3px] size-[18px] rounded-full bg-white shadow transition-transform ${
+                requireApproval ? "translate-x-5" : ""
+              }`}
+            />
+          </button>
+        </div>
+      )}
+
       {pendingCount > 0 && (
         <div role="status" className="flex items-start gap-3 rounded-xl border border-warning/30 bg-warning-soft p-4">
           <Clock className="mt-0.5 size-5 shrink-0 text-warning-text" strokeWidth={1.75} />
@@ -179,7 +235,7 @@ export function DevicesClient({ devices, facilities }: { devices: DeviceRow[]; f
               {pendingCount} {pendingCount === 1 ? "device is" : "devices are"} waiting for approval
             </p>
             <p className="text-sm text-muted-foreground">
-              New terminals appear here after a floor worker signs in on them. Check the name shown on the terminal, then approve it.
+              Your organization requires approval for new terminals. Check the name shown on the terminal, then approve it.
             </p>
           </div>
         </div>
@@ -194,7 +250,7 @@ export function DevicesClient({ devices, facilities }: { devices: DeviceRow[]; f
             </span>
             <p className="font-heading text-base font-medium text-foreground">No devices yet</p>
             <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-              Register this browser, or sign in on the floor terminal with a worker badge. It will show up here for approval.
+              Terminals appear here automatically after a worker signs in on them with their badge.
             </p>
           </div>
         ) : (

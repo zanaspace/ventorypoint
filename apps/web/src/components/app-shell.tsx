@@ -17,8 +17,6 @@ import {
   LogOut,
   Shield,
   Smartphone,
-  MonitorSmartphone,
-  Activity,
 } from "lucide-react";
 import { ThemeToggle } from "./ui/theme-toggle";
 import { WorkspaceSwitcher } from "./workspace-switcher";
@@ -65,15 +63,14 @@ export function AppShell({ children, context }: AppShellProps) {
     { name: "Facilities", href: "/dashboard/facilities", icon: Building, roles: ["owner", "admin", "ops_manager", "supervisor"] },
     { name: "Clients", href: "/dashboard/clients", icon: Users, roles: ["owner", "admin", "ops_manager", "supervisor", "billing"] },
     { name: "Members", href: "/dashboard/members", icon: Shield, roles: ["owner", "admin", "ops_manager"] },
-    { name: "Devices", href: "/dashboard/devices", icon: MonitorSmartphone, roles: ["owner", "admin", "ops_manager", "supervisor"] },
-    { name: "Event deliveries", href: "/dashboard/event-deliveries", icon: Activity, roles: ["owner", "admin"] },
   ];
 
   const filteredNavigation = allNavigation.filter((item) =>
     item.roles.includes(userRole)
   );
 
-  const canAccessSettings = ["owner", "admin", "billing"].includes(userRole);
+  // Settings: organization (owner/admin/billing), devices (ops managers, supervisors), change history (owner/admin)
+  const canAccessSettings = ["owner", "admin", "billing", "ops_manager", "supervisor"].includes(userRole);
 
   const handleSignOut = async () => {
     const supabase = createClient();
@@ -299,7 +296,7 @@ export function AppShell({ children, context }: AppShellProps) {
                       className="dropdown-item"
                     >
                       <Settings strokeWidth={1.5} />
-                      <span>Organization settings</span>
+                      <span>Settings</span>
                     </Link>
                   )}
 

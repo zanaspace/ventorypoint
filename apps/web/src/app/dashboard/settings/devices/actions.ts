@@ -37,7 +37,7 @@ export async function registerDevice(input: {
   });
   if (error) return fail(error, "Could not register this device.");
 
-  revalidatePath("/dashboard/devices");
+  revalidatePath("/dashboard/settings/devices");
   return { ok: true };
 }
 
@@ -61,7 +61,7 @@ export async function updateDevice(input: {
   });
   if (error) return fail(error, "Could not update this device.");
 
-  revalidatePath("/dashboard/devices");
+  revalidatePath("/dashboard/settings/devices");
   return { ok: true };
 }
 
@@ -71,6 +71,24 @@ export async function retireDevice(deviceId: string): Promise<ActionResult> {
   const { error } = await supabase.rpc("retire_device", { p_device_id: deviceId });
   if (error) return fail(error, "Could not retire this device.");
 
-  revalidatePath("/dashboard/devices");
+  revalidatePath("/dashboard/settings/devices");
+  return { ok: true };
+}
+
+/** Turns supervisor approval for new terminals on or off (owners and admins). */
+export async function setRequireDeviceApproval(required: boolean): Promise<ActionResult> {
+  const context = await getActiveWorkspaceContext();
+  if (!context?.activeOrg || !["owner", "admin"].includes(context.role)) {
+    return { ok: false, error: "Only owners and admins can change this setting." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("organizations")
+    .update({ require_device_approval: required, updated_at: new Date().toISOString() })
+    .eq("id", context.activeOrg.id);
+  if (error) return fail(error, "Could not update the setting.");
+
+  revalidatePath("/dashboard/settings/devices");
   return { ok: true };
 }
