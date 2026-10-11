@@ -3,6 +3,10 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
+import { switchActiveOrganization } from "@/lib/org-context";
+
+// new=true keeps existing members on this page (otherwise onboarding sends them to the dashboard)
+const back = (message: string) => `/onboarding?new=true&message=${encodeURIComponent(message)}`;
 
 export async function createOrganization(formData: FormData) {
   const name = ((formData.get("name") as string) || "").trim();
@@ -18,12 +22,12 @@ export async function createOrganization(formData: FormData) {
   }
 
   if (!name) {
-    return redirect(`/onboarding?message=${encodeURIComponent("Organization name is required")}`);
+    return redirect(back("Organization name is required"));
   }
 
   // Single transaction in the database: creates the org and makes the caller its Owner.
   // No service-role key needed, the RPC derives the user from the session.
-  const { error } = await supabase.rpc("create_organization", {
+  const { data: newOrgId, error } = await supabase.rpc("create_organization", {
     p_name: name,
     p_country: country,
     p_timezone: timezone,
@@ -31,8 +35,11 @@ export async function createOrganization(formData: FormData) {
   });
 
   if (error) {
-    return redirect(`/onboarding?message=${encodeURIComponent(error.message)}`);
+    return redirect(back(error.message));
   }
+
+  // Open the new workspace straight away
+  if (newOrgId) await switchActiveOrganization(newOrgId as string);
 
   revalidatePath("/", "layout");
   redirect("/dashboard");

@@ -7,6 +7,7 @@ import {
   switchActiveOrganization,
   switchActiveFacility,
 } from "@/lib/org-context";
+import { useRouter } from "next/navigation";
 import type {
   WorkspaceOrganization,
   WorkspaceFacility,
@@ -30,6 +31,7 @@ export function WorkspaceSwitcher({
   const [orgOpen, setOrgOpen] = useState(false);
   const [facilityOpen, setFacilityOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const router = useRouter();
 
   const orgRef = useRef<HTMLDivElement>(null);
   const facilityRef = useRef<HTMLDivElement>(null);
@@ -65,6 +67,7 @@ export function WorkspaceSwitcher({
     setOrgOpen(false);
     startTransition(async () => {
       await switchActiveOrganization(orgId);
+      window.location.href = "/dashboard";
     });
   };
 
@@ -76,6 +79,7 @@ export function WorkspaceSwitcher({
     setFacilityOpen(false);
     startTransition(async () => {
       await switchActiveFacility(facId);
+      router.refresh();
     });
   };
 
@@ -159,14 +163,17 @@ export function WorkspaceSwitcher({
 
             <div className="dropdown-separator" />
             <div>
-              <Link
-                href="/onboarding"
-                onClick={() => setOrgOpen(false)}
-                className="dropdown-item font-medium text-brand-text"
+              <button
+                type="button"
+                onClick={() => {
+                  setOrgOpen(false);
+                  router.push("/onboarding?new=true");
+                }}
+                className="dropdown-item font-medium text-brand-text w-full text-left"
               >
                 <Plus strokeWidth={1.5} />
-                <span>Create new organization</span>
-              </Link>
+                <span>Create or join existing one</span>
+              </button>
             </div>
           </div>
         )}

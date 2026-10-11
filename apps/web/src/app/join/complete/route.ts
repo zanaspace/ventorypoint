@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
 import { getClientIp, getPendingInvite, PENDING_INVITE_COOKIE } from "@/lib/invite";
+import { ACTIVE_FACILITY_COOKIE, ACTIVE_ORG_COOKIE } from "@/lib/org-context-types";
 
 /**
  * Redeems the invite stored in the pending_invite cookie for the signed-in user.
@@ -40,6 +41,13 @@ export async function GET(request: Request) {
 
   if (data.pending) {
     return NextResponse.redirect(`${origin}/revoked?reason=pending`);
+  }
+
+  // Open the workspace they just joined
+  if (data.organization_id) {
+    const opts = { path: "/", sameSite: "lax" as const, secure: process.env.NODE_ENV === "production", maxAge: 60 * 60 * 24 * 365 };
+    store.set(ACTIVE_ORG_COOKIE, data.organization_id, opts);
+    store.set(ACTIVE_FACILITY_COOKIE, "all", opts);
   }
   return NextResponse.redirect(`${origin}/dashboard`);
 }

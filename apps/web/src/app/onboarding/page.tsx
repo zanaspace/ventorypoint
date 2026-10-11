@@ -46,7 +46,12 @@ const CURRENCIES = [
   { label: "MXN — Mexican Peso", value: "MXN" },
 ];
 
-export default async function OnboardingPage() {
+type Props = {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}
+
+export default async function OnboardingPage(props: Props) {
+  const searchParams = await props.searchParams;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -60,8 +65,12 @@ export default async function OnboardingPage() {
     .select("is_active")
     .eq("user_id", user.id);
 
-  if (memberships?.some((m) => m.is_active)) redirect("/dashboard");
-  if (memberships && memberships.length > 0) redirect("/revoked");
+  const isRequestingNew = searchParams?.new === "true";
+  // Existing members arrive here (with ?new=true) to add another workspace
+  const addingAnother = isRequestingNew && !!memberships?.some((m) => m.is_active);
+
+  if (!isRequestingNew && memberships?.some((m) => m.is_active)) redirect("/dashboard");
+  if (!isRequestingNew && memberships && memberships.length > 0) redirect("/revoked");
 
   // Came here mid invite-flow (e.g. just signed up with a code)? Finish joining first.
   if (await hasPendingInvite()) redirect("/join/complete");
@@ -75,6 +84,14 @@ export default async function OnboardingPage() {
         <ToastError />
       </Suspense>
       <div className="w-full max-w-md space-y-6">
+        {addingAnother && (
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center gap-1 text-sm font-semibold text-brand-text hover:underline"
+          >
+            ← Back to dashboard
+          </Link>
+        )}
         {pendingInvites && pendingInvites.length > 0 && (
           <div className="rounded-xl border border-border bg-card p-6 shadow-sm space-y-3">
             <h2 className="text-lg font-semibold">Pending invitations</h2>
@@ -105,9 +122,13 @@ export default async function OnboardingPage() {
 
         <div className="space-y-8 rounded-xl border border-border bg-card p-8 shadow-sm">
           <div className="space-y-2 text-center">
-            <h1 className="text-3xl font-bold tracking-tight">Welcome aboard!</h1>
+            <h1 className="text-3xl font-bold tracking-tight">
+              {addingAnother ? "Create another workspace" : "Welcome aboard!"}
+            </h1>
             <p className="text-muted-foreground">
-              Set up your organization. You can invite team members later.
+              {addingAnother
+                ? "Set up a new organization below, or join an existing one with an invite code."
+                : "Set up your organization. You can invite team members later."}
             </p>
           </div>
 

@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import { ClientsClient } from "./components/clients-client";
+import { getActiveWorkspaceContext } from "@/lib/org-context";
 
 export default async function ClientsPage() {
   const supabase = await createClient();
@@ -10,35 +11,25 @@ export default async function ClientsPage() {
     redirect("/login");
   }
 
-  // Get user's organizations
-  const { data: members } = await supabase
-    .from("organization_members")
-    .select("organization_id, role, organizations(id, name)")
-    .eq("user_id", user.id)
-    .eq("is_active", true);
-
-  if (!members || members.length === 0) {
+  // Scoped to the active workspace only, never every org the user belongs to.
+  const context = await getActiveWorkspaceContext();
+  if (!context?.activeOrg) {
     redirect("/onboarding");
   }
+  const orgId = context.activeOrg.id;
+  const organizations = [{ id: orgId, name: context.activeOrg.name }];
 
-  const orgIds = members.map((m: any) => m.organization_id);
-  
-  // Format organizations for the client
-  const organizations = members
-    .map((m: any) => (Array.isArray(m.organizations) ? m.organizations[0] : m.organizations))
-    .filter((org: any): org is { id: string; name: string } => org !== null && org !== undefined);
-
-  // Fetch client accounts for these organizations
+  // Fetch client accounts for the active workspace
   const { data: clients } = await supabase
     .from("client_accounts")
     .select("*, client_facilities(facility_id)")
-    .in("organization_id", orgIds)
+    .eq("organization_id", orgId)
     .order("created_at", { ascending: false });
 
   const { data: facilities } = await supabase
     .from("facilities")
     .select("id, name, organization_id")
-    .in("organization_id", orgIds)
+    .eq("organization_id", orgId)
     .order("name");
 
   const formattedClients = (clients || []).map((c: any) => ({

@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import { MembersClient } from "./components/members-client";
+import { getActiveWorkspaceContext } from "@/lib/org-context";
 
 export default async function MembersPage() {
   const supabase = await createClient();
@@ -10,29 +11,30 @@ export default async function MembersPage() {
     redirect("/login");
   }
 
-  // Get user's active organizations (and their own rights in each)
-  const { data: userMemberships } = await supabase
-    .from("organization_members")
-    .select("organization_id, role, can_manage_all_members, organizations(id, name)")
-    .eq("user_id", user.id)
-    .eq("is_active", true);
-
-  if (!userMemberships || userMemberships.length === 0) {
+  // Everything on this page is scoped to the active workspace only, never every org the user belongs to.
+  const context = await getActiveWorkspaceContext();
+  if (!context?.activeOrg) {
     redirect("/onboarding");
   }
+  const orgId = context.activeOrg.id;
 
-  const orgIds = userMemberships.map((m: any) => m.organization_id);
+  // The caller's own rights in the active workspace
+  const { data: myMembership } = await supabase
+    .from("organization_members")
+    .select("role, can_manage_all_members")
+    .eq("user_id", user.id)
+    .eq("organization_id", orgId)
+    .eq("is_active", true)
+    .maybeSingle();
 
-  const organizations = userMemberships
-    .map((m: any) => (Array.isArray(m.organizations) ? m.organizations[0] : m.organizations))
-    .filter((org: any): org is { id: string; name: string } => org !== null && org !== undefined);
+  if (!myMembership) {
+    redirect("/dashboard");
+  }
 
-  const myRights = Object.fromEntries(
-    userMemberships.map((m: any) => [
-      m.organization_id,
-      { role: m.role as string, canManageAll: !!m.can_manage_all_members },
-    ])
-  );
+  const organizations = [{ id: orgId, name: context.activeOrg.name }];
+  const myRights = {
+    [orgId]: { role: myMembership.role as string, canManageAll: !!myMembership.can_manage_all_members },
+  };
 
   // organization_members has two FKs to profiles (user_id, added_by), so the embeds must be explicit.
   const { data: members, error: membersError } = await supabase
@@ -69,7 +71,7 @@ export default async function MembersPage() {
         locked_until
       )
     `)
-    .in("organization_id", orgIds)
+    .eq("organization_id", orgId)
     .order("created_at", { ascending: false });
 
   if (membersError) {
@@ -80,13 +82,13 @@ export default async function MembersPage() {
   const { data: invites } = await supabase
     .from("invitations")
     .select("id, organization_id, token, code_hint, role, expires_at, uses, max_uses, status, domain_restriction, requires_approval, all_facilities")
-    .in("organization_id", orgIds)
+    .eq("organization_id", orgId)
     .order("created_at", { ascending: false });
 
   const { data: facilities } = await supabase
     .from("facilities")
     .select("id, name, organization_id")
-    .in("organization_id", orgIds)
+    .eq("organization_id", orgId)
     .order("name");
 
   const first = <T,>(v: T | T[] | null | undefined): T | null =>
