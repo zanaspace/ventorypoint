@@ -12,8 +12,8 @@ import { hasPendingInvite } from "@/lib/invite";
 
 async function getOrigin() {
   const headersList = await headers();
-  const host = headersList.get("host") || "localhost:3000";
-  const protocol = process.env.NODE_ENV === "development" ? "http" : "https";
+  const host = headersList.get("x-forwarded-host") || headersList.get("host") || "localhost:3000";
+  const protocol = headersList.get("x-forwarded-proto") || (process.env.NODE_ENV === "development" ? "http" : "https");
   return `${protocol}://${host}`;
 }
 
