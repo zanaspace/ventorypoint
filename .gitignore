@@ -36,6 +36,7 @@ next-env.d.ts
 # supabase
 supabase/.temp/
 supabase/functions/*/node_modules/
+supabase/*logs*.md
 
 # IDEs
 .idea/
