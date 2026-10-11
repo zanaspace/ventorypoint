@@ -1,4 +1,4 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "corepack enable && pnpm install"
+  "installCommand": "npx -y pnpm@9.15.4 install"
 }
