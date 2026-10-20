@@ -8,6 +8,7 @@ import { TablePagination } from "@/components/ui/table-pagination";
 import { ActionDropdown } from "@/components/ui/action-dropdown";
 import { exportLocationsToCsv } from "@/lib/locations/csv-engine";
 import { updateLocation, deleteLocation } from "../actions";
+import { CreateLocationModal } from "./create-location-modal";
 import { GeneratorModal } from "./generator-modal";
 import { LabelPrintModal } from "./label-print-modal";
 import { CsvImportModal } from "./csv-import-modal";
@@ -15,6 +16,7 @@ import { ConventionModal } from "./convention-modal";
 import { LocationLookupModal } from "./location-lookup-drawer";
 import { toast } from "sonner";
 import {
+  Plus,
   MapPin,
   Building,
   Layers,
@@ -75,6 +77,7 @@ export function LocationsClient({
   const [itemsPerPage, setItemsPerPage] = useState(25);
 
   // Modals state
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isGeneratorOpen, setIsGeneratorOpen] = useState(false);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -218,6 +221,15 @@ export function LocationsClient({
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
+            onClick={() => setIsCreateOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-md bg-primary text-primary-foreground hover:bg-primary-hover transition-colors cursor-pointer shadow-sm"
+          >
+            <Plus className="w-4 h-4" />
+            Add Location
+          </button>
+
+          <button
+            type="button"
             onClick={() => setIsLookupOpen(true)}
             className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-md border border-input hover:bg-accent transition-colors cursor-pointer"
             title="Scan or Lookup Location Code"
@@ -229,9 +241,9 @@ export function LocationsClient({
           <button
             type="button"
             onClick={() => setIsGeneratorOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-md bg-primary text-primary-foreground hover:bg-primary-hover transition-colors cursor-pointer shadow-sm"
+            className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-md border border-input hover:bg-accent transition-colors cursor-pointer"
           >
-            <Layers className="w-4 h-4" />
+            <Layers className="w-4 h-4 text-brand" />
             Generate Range
           </button>
 
@@ -603,6 +615,13 @@ export function LocationsClient({
       </div>
 
       {/* Modals */}
+      <CreateLocationModal
+        isOpen={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
+        facility={facility}
+        onSuccess={() => router.refresh()}
+      />
+
       <GeneratorModal
         isOpen={isGeneratorOpen}
         onClose={() => setIsGeneratorOpen(false)}
