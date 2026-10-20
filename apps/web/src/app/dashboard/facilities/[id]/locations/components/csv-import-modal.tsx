@@ -85,50 +85,53 @@ ${facility.short_code}-W1-BLK-LN01-S01,${facility.short_code}-W1-BLK-LN01-S01,,b
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Import Locations from CSV" maxWidth="3xl">
-      <div className="space-y-5">
-        <div className="flex items-center justify-between p-3.5 rounded-lg bg-gray-50/50 dark:bg-white/5 border border-border">
-          <div className="text-xs text-muted-foreground">
-            Strict validation: verifies naming convention, excludes lookalike characters (O/I/S), checks duplicates.
-          </div>
+    <Modal isOpen={isOpen} onClose={onClose} title="Import Locations from CSV" maxWidth="max-w-2xl">
+      <div className="p-6 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-lg bg-gray-50/70 dark:bg-white/[0.02] border border-border">
+          <span className="text-xs text-muted-foreground">
+            Validates naming rules, flags lookalikes (O/I/S), and checks duplicate collisions.
+          </span>
           <button
             type="button"
             onClick={handleDownloadTemplate}
-            className="flex items-center gap-1.5 text-xs font-semibold text-brand hover:underline cursor-pointer"
+            className="flex items-center gap-1.5 text-xs font-semibold text-brand hover:underline cursor-pointer shrink-0"
           >
             <Download className="w-3.5 h-3.5" />
             Download Sample CSV
           </button>
         </div>
 
-        {/* File Dropzone / File Picker */}
+        {/* File Picker */}
         <div>
-          <label className="text-xs font-medium text-muted-foreground block mb-1.5">
-            Select CSV File or Paste Text Below
+          <label className="text-xs font-semibold text-foreground block mb-1">
+            Upload CSV File
           </label>
           <input
             type="file"
             accept=".csv,text/csv"
             onChange={handleFileChange}
-            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary-hover file:cursor-pointer cursor-pointer"
+            className="block w-full text-xs text-muted-foreground file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary-hover file:cursor-pointer cursor-pointer border border-border rounded-lg bg-background"
           />
         </div>
 
-        {/* Text Area */}
+        {/* Textarea */}
         <div>
+          <label className="text-xs font-semibold text-foreground block mb-1">
+            Or Paste CSV Content
+          </label>
           <textarea
-            rows={8}
+            rows={6}
             value={csvText}
             onChange={(e) => setCsvText(e.target.value)}
             placeholder={`full_code,barcode,location_type,human_path\n${facility.short_code}-W1-ZA-A01-B01-L1-P01,${facility.short_code}-W1-ZA-A01-B01-L1-P01,rack_pallet_position,Dallas 1 › Wing 1 › Area A`}
-            className="w-full p-3 font-mono text-xs border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-brand"
+            className="w-full p-2.5 font-mono text-xs border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-brand"
           />
         </div>
 
-        {/* Validation Errors Report */}
+        {/* Error Report */}
         {validationReport && validationReport.errors.length > 0 && (
-          <div className="p-4 rounded-xl border border-destructive/20 bg-destructive/5 space-y-3">
-            <div className="flex items-center gap-2 text-destructive font-semibold text-sm">
+          <div className="p-3.5 rounded-xl border border-destructive/20 bg-destructive/5 space-y-2.5">
+            <div className="flex items-center gap-2 text-destructive font-semibold text-xs">
               <AlertTriangle className="w-4 h-4" />
               <span>
                 Found {validationReport.errors.length} validation issues (
@@ -136,13 +139,13 @@ ${facility.short_code}-W1-BLK-LN01-S01,${facility.short_code}-W1-BLK-LN01-S01,,b
               </span>
             </div>
 
-            <div className="max-h-48 overflow-y-auto rounded-md border border-border bg-background divide-y divide-border">
+            <div className="max-h-40 overflow-y-auto rounded-lg border border-border bg-background divide-y divide-border">
               {validationReport.errors.map((err, idx) => (
-                <div key={idx} className="p-2.5 text-xs flex items-start gap-2">
-                  <span className="font-mono bg-destructive/10 text-destructive px-1.5 py-0.5 rounded shrink-0">
+                <div key={idx} className="p-2 text-xs flex items-start gap-2">
+                  <span className="font-mono bg-destructive/10 text-destructive px-1.5 py-0.5 rounded text-[10px] shrink-0">
                     Row #{err.row}
                   </span>
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-0 flex-1 text-[11px]">
                     {err.code && <span className="font-mono font-semibold mr-1.5">[{err.code}]</span>}
                     <span className="text-muted-foreground">{err.reason}</span>
                   </div>
@@ -152,11 +155,10 @@ ${facility.short_code}-W1-BLK-LN01-S01,${facility.short_code}-W1-BLK-LN01-S01,,b
           </div>
         )}
 
-        {/* Success Notice */}
         {validationReport && validationReport.errors.length === 0 && validationReport.insertedCount > 0 && (
-          <div className="p-4 rounded-xl border border-success/20 bg-success/5 flex items-center gap-2 text-success font-semibold text-sm">
+          <div className="p-3.5 rounded-xl border border-success/20 bg-success/5 flex items-center gap-2 text-success font-semibold text-xs">
             <CheckCircle2 className="w-4 h-4" />
-            <span>All {validationReport.insertedCount} locations validated and imported successfully!</span>
+            <span>All {validationReport.insertedCount.toLocaleString()} locations validated and imported successfully!</span>
           </div>
         )}
 
@@ -165,7 +167,7 @@ ${facility.short_code}-W1-BLK-LN01-S01,${facility.short_code}-W1-BLK-LN01-S01,,b
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/10 rounded-md transition-colors cursor-pointer"
+            className="px-4 py-2 text-xs font-semibold rounded-md border border-input text-foreground hover:bg-accent transition-colors cursor-pointer"
           >
             Cancel
           </button>
@@ -173,16 +175,16 @@ ${facility.short_code}-W1-BLK-LN01-S01,${facility.short_code}-W1-BLK-LN01-S01,,b
             type="button"
             disabled={isSubmitting || !csvText.trim()}
             onClick={handleImport}
-            className="flex items-center gap-2 px-5 py-2 text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary-hover rounded-md transition-colors disabled:opacity-50 cursor-pointer shadow-sm"
+            className="flex items-center gap-2 px-5 py-2 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary-hover rounded-md transition-all disabled:opacity-40 cursor-pointer shadow-sm"
           >
             {isSubmitting ? (
               <>
-                <RefreshCw className="w-4 h-4 animate-spin" />
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                 Validating & Importing...
               </>
             ) : (
               <>
-                <FileUp className="w-4 h-4" />
+                <FileUp className="w-3.5 h-3.5" />
                 Validate & Import Locations
               </>
             )}
