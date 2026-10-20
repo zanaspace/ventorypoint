@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Building2, Globe, Clock, DollarSign, Copy, Check, ShieldAlert, Save } from "lucide-react";
-import { updateOrganizationSettings } from "../actions";
+import { Building2, Globe, Clock, DollarSign, Copy, Check, ShieldAlert, Save, Download, FileArchive, CheckCircle2 } from "lucide-react";
+import { updateOrganizationSettings, requestDataExportAction } from "../actions";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 
 const COUNTRY_OPTIONS = [
@@ -58,8 +58,38 @@ export function SettingsClient({ organization, userRole }: SettingsClientProps) 
   const [copiedId, setCopiedId] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportResult, setExportResult] = useState<{ filename: string; recordCount: number; expiresAt?: string } | null>(null);
 
   const canEdit = ["owner", "admin"].includes(userRole);
+
+  const handleExportData = async (format: "json" | "csv" = "json") => {
+    setIsExporting(true);
+    try {
+      const res = await requestDataExportAction(organization.id, format);
+      if (res.ok && res.dataContent) {
+        const blob = new Blob([res.dataContent], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = res.filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        setExportResult({
+          filename: res.filename,
+          recordCount: res.recordCount,
+          expiresAt: res.expiresAt,
+        });
+      }
+    } catch (err: any) {
+      setFeedback({ type: "error", message: err.message || "Failed to generate export." });
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const handleCopyOrgId = () => {
     navigator.clipboard.writeText(organization.id);
@@ -256,6 +286,48 @@ export function SettingsClient({ organization, userRole }: SettingsClientProps) 
           </div>
         )}
       </form>
+
+      {/* Customer Data Export */}
+      {["owner", "admin"].includes(userRole) && (
+        <div className="bg-card border border-border rounded-xl p-6 shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-brand/10 border border-brand/20 flex items-center justify-center text-brand-text shrink-0">
+                <FileArchive className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-base font-semibold text-foreground">Customer Data Export & Portability</h2>
+                <p className="text-xs text-muted-foreground">
+                  Export complete tenant records (facilities, team members, audit trails, and subscriptions) into machine-readable JSON.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => handleExportData("json")}
+              disabled={isExporting}
+              className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-surface border border-border px-4 py-2 text-xs font-semibold text-foreground hover:bg-accent transition-colors shadow-xs disabled:opacity-50 shrink-0"
+            >
+              <Download className="w-3.5 h-3.5 text-muted-foreground" />
+              {isExporting ? "Compiling Export..." : "Export Tenant Data (JSON)"}
+            </button>
+          </div>
+
+          {exportResult && (
+            <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-emerald-800 dark:text-emerald-300">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span>
+                  Downloaded <strong>{exportResult.filename}</strong> ({exportResult.recordCount} total records). Expiring link logged to audit trail.
+                </span>
+              </div>
+              <span className="text-[11px] font-mono text-muted-foreground shrink-0">
+                Expires in 7 days
+              </span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Danger Zone */}
       {userRole === "owner" && (

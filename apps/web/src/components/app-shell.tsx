@@ -23,6 +23,9 @@ import { WorkspaceSwitcher } from "./workspace-switcher";
 import { BrandMark } from "./brand-mark";
 import type { WorkspaceContext } from "@/lib/org-context-types";
 import { createClient } from "@/utils/supabase/client";
+import { AnnouncementBanner } from "./announcement-banner";
+import { SupportAccessBanner } from "./support-access-banner";
+import { NotificationCenter } from "./notification-center";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -252,13 +255,7 @@ export function AppShell({ children, context }: AppShellProps) {
               </span>
             </div>
 
-            <button
-              className="relative grid place-items-center size-9 rounded-md border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
-              aria-label="Notifications"
-            >
-              <Bell className="w-[18px] h-[18px]" strokeWidth={1.5} />
-              <span className="absolute -top-1 -right-1 size-2.5 bg-brand rounded-full border-2 border-card"></span>
-            </button>
+            <NotificationCenter organizationId={context?.activeOrg?.id} />
 
             <ThemeToggle />
 
@@ -319,6 +316,8 @@ export function AppShell({ children, context }: AppShellProps) {
             </div>
           </div>
         </header>
+        <SupportAccessBanner organizationId={context?.activeOrg?.id} />
+        <AnnouncementBanner organizationId={context?.activeOrg?.id} />
 
         {/* Scrollable Page Content */}
         <main className="flex-1 overflow-y-auto overflow-x-hidden bg-surface p-4 md:p-6 lg:p-8">

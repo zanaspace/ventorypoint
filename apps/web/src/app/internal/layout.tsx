@@ -32,7 +32,7 @@ export default async function InternalLayout({ children }: { children: React.Rea
             </div>
           </div>
           <InternalNav />
-          <Link href="/dashboard" className="inline-flex items-center gap-1.5 text-sm font-semibold text-purple-200 hover:text-white">
+          <Link href="/dashboard" className="inline-flex cursor-pointer items-center gap-1.5 text-sm font-semibold text-purple-200 hover:text-white">
             <ArrowLeft className="size-4" /> Back to app
           </Link>
         </div>

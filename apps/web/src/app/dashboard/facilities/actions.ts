@@ -2,6 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
+import { assertCanAddFacility } from "@/lib/entitlements";
 
 type Hours = Record<string, { closed: boolean; open: string; close: string }>;
 type Cutoff = { carrier: string; time: string };
@@ -111,6 +112,12 @@ export async function createFacility(formData: FormData) {
 
   if (!parsed.fields.name || !parsed.fields.short_code || !organization_id) {
     return { error: "Missing required fields" };
+  }
+
+  try {
+    await assertCanAddFacility(organization_id);
+  } catch (err: any) {
+    return { error: err.message };
   }
 
   const { data, error } = await supabase

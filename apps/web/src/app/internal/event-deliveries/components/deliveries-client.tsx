@@ -67,7 +67,7 @@ export function DeliveriesClient({ stats, problems }: { stats: ConsumerHealth[];
         <button
           type="button"
           onClick={() => startTransition(() => router.refresh())}
-          className="inline-flex h-10 items-center gap-2 rounded-md border border-input px-4 text-sm font-semibold text-foreground transition-colors hover:border-brand hover:bg-brand hover:text-white"
+          className="inline-flex cursor-pointer h-10 items-center gap-2 rounded-md border border-border bg-white dark:bg-card px-4 text-sm font-semibold text-foreground transition-colors hover:bg-gray-50 dark:hover:bg-white/5 shadow-xs"
         >
           <RefreshCw className={`size-4 ${isPending ? "animate-spin" : ""}`} strokeWidth={1.75} />
           Refresh
@@ -185,7 +185,7 @@ export function DeliveriesClient({ stats, problems }: { stats: ConsumerHealth[];
                           type="button"
                           disabled={isPending}
                           onClick={() => run(() => replayDelivery(p.id), () => "Delivery sent back to the queue.")}
-                          className="inline-flex h-8 items-center gap-1.5 rounded-md border border-input px-3 text-xs font-semibold text-foreground transition-colors hover:border-brand hover:bg-brand hover:text-white disabled:opacity-45"
+                          className="inline-flex cursor-pointer h-8 items-center gap-1.5 rounded-md border border-border bg-white dark:bg-card px-3 text-xs font-semibold text-foreground transition-colors hover:bg-gray-50 dark:hover:bg-white/5 disabled:opacity-45 shadow-xs"
                         >
                           <RotateCcw className="size-3.5" /> Replay
                         </button>

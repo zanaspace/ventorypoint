@@ -150,7 +150,7 @@ export function EventConsoleClient({
               max={100}
               value={count}
               onChange={(e) => setCount(Math.min(100, Math.max(1, Number(e.target.value) || 1)))}
-              className="h-10 rounded-md border border-input bg-card px-3 text-sm font-normal focus:border-ring focus:outline-none focus:ring-3 focus:ring-ring/20"
+              className="h-10 rounded-md border border-border bg-surface px-3 text-sm font-normal text-foreground focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
             />
           </label>
           <label className="flex flex-col gap-1.5 text-sm font-semibold">
@@ -160,7 +160,7 @@ export function EventConsoleClient({
               onChange={(e) => setPayloadText(e.target.value)}
               rows={6}
               spellCheck={false}
-              className="rounded-md border border-input bg-card p-3 font-mono text-xs font-normal focus:border-ring focus:outline-none focus:ring-3 focus:ring-ring/20"
+              className="rounded-md border border-border bg-surface p-3 font-mono text-xs font-normal text-foreground focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
             />
           </label>
           {error && <p className="text-sm font-medium text-danger-text" role="alert">{error}</p>}
@@ -168,7 +168,7 @@ export function EventConsoleClient({
             type="button"
             onClick={emit}
             disabled={isPending}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-45"
+            className="inline-flex cursor-pointer h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-45"
           >
             <Send className="size-4" /> {isPending ? "Emitting…" : `Emit ${count} event${count === 1 ? "" : "s"}`}
           </button>
@@ -201,7 +201,7 @@ export function EventConsoleClient({
               <button
                 type="button"
                 onClick={() => setReceived([])}
-                className="inline-flex h-8 items-center gap-1.5 rounded-md px-2 text-xs font-semibold text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                className="inline-flex cursor-pointer h-8 items-center gap-1.5 rounded-md px-2 text-xs font-semibold text-muted-foreground hover:bg-accent hover:text-accent-foreground"
               >
                 <Trash2 className="size-3.5" /> Clear
               </button>
