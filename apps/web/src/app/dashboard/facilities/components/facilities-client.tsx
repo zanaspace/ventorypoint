@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Plus, Search, Building, MapPin, Clock, X, Trash2, Edit2, LocateFixed, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Plus, Search, Building, MapPin, Clock, X, Trash2, Edit2, LocateFixed, AlertTriangle, CheckCircle2, Layers } from "lucide-react";
 import { createFacility, deleteFacility, updateFacility, geocodeAddress, reverseGeocode } from "../actions";
 import { toast } from "sonner";
 import { ActionDropdown } from "@/components/ui/action-dropdown";
@@ -74,6 +76,7 @@ export function FacilitiesClient({
   initialFacilities: Facility[];
   organizations: Org[];
 }) {
+  const router = useRouter();
   const [facilities, setFacilities] = useState<Facility[]>(initialFacilities);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingFacility, setEditingFacility] = useState<Facility | null>(null);
@@ -394,10 +397,15 @@ export function FacilitiesClient({
                   <tr key={facility.id} className="hover:bg-gray-50/50 dark:hover:bg-white/5 transition-colors">
                     <td data-primary className="px-6 py-4 font-medium text-gray-900 dark:text-gray-100">
                       <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-md bg-accent flex items-center justify-center text-brand-text">
-                        <Building className="w-4 h-4" />
-                      </div>
-                      {facility.name}
+                        <div className="w-8 h-8 rounded-md bg-accent flex items-center justify-center text-brand-text">
+                          <Building className="w-4 h-4" />
+                        </div>
+                        <Link
+                          href={`/dashboard/facilities/${facility.id}/locations`}
+                          className="hover:text-brand hover:underline transition-colors"
+                        >
+                          {facility.name}
+                        </Link>
                       </div>
                     </td>
                     <td data-label="Code" className="px-6 py-4">
@@ -436,6 +444,11 @@ export function FacilitiesClient({
                     <td data-actions className="px-6 py-4 text-right">
                       <ActionDropdown 
                         actions={[
+                          {
+                            label: "Manage Locations",
+                            icon: <MapPin className="w-4 h-4" />,
+                            onClick: () => router.push(`/dashboard/facilities/${facility.id}/locations`)
+                          },
                           {
                             label: "Edit",
                             icon: <Edit2 className="w-4 h-4" />,
