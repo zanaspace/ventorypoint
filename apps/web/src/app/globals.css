@@ -57,6 +57,8 @@
   --color-surface-hover: var(--surface-hover);
   --color-text-primary: var(--foreground);
   --color-text-secondary: var(--muted-foreground);
+  --color-brand-primary: var(--primary);
+  --color-brand-secondary: #644EFF;
 
   /* Navigation */
   --color-rail: var(--rail);

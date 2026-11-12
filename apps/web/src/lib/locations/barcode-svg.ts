@@ -30,7 +30,7 @@ const CODE128_PATTERNS: Record<number, string> = {
 };
 
 export function generateCode128Svg(text: string, height: number = 60, barWidth: number = 2): string {
-  const clean = text.trim();
+  const clean = (text || "LOC").trim() || "LOC";
   const values: number[] = [104]; // Start Code B
 
   for (let i = 0; i < clean.length; i++) {

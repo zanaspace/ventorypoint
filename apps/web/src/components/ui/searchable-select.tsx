@@ -5,12 +5,14 @@ import { createPortal } from "react-dom";
 import { Check, ChevronDown, Search } from "lucide-react";
 import { useDropdownPosition } from "./use-dropdown-position";
 
-interface Option {
+export interface Option {
   label: string;
   value: string;
+  description?: string;
+  badge?: string;
 }
 
-interface SearchableSelectProps {
+export interface SearchableSelectProps {
   name?: string;
   options: Option[];
   value?: string;
@@ -24,6 +26,8 @@ interface SearchableSelectProps {
   size?: "default" | "sm";
   id?: string;
   className?: string;
+  allowCustomValue?: boolean;
+  customValueLabel?: (query: string) => string;
   "aria-label"?: string;
   "aria-labelledby"?: string;
 }
@@ -42,6 +46,8 @@ export function SearchableSelect({
   size = "default",
   id,
   className,
+  allowCustomValue = false,
+  customValueLabel,
   "aria-label": ariaLabel,
   "aria-labelledby": ariaLabelledBy,
 }: SearchableSelectProps) {
@@ -60,11 +66,43 @@ export function SearchableSelect({
   const showSearch = searchable ?? options.length > 6;
   const { style, side } = useDropdownPosition(triggerRef, isOpen);
 
-  const filteredOptions = useMemo(
-    () => options.filter((opt) => opt.label.toLowerCase().includes(search.toLowerCase())),
-    [options, search]
-  );
-  const selectedOption = options.find((opt) => opt.value === currentValue);
+  const filteredOptions = useMemo(() => {
+    const q = search.toLowerCase();
+    const filtered = options.filter(
+      (opt) =>
+        opt.label.toLowerCase().includes(q) ||
+        (opt.description && opt.description.toLowerCase().includes(q)) ||
+        (opt.badge && opt.badge.toLowerCase().includes(q)) ||
+        opt.value.toLowerCase().includes(q)
+    );
+
+    if (allowCustomValue && search.trim()) {
+      const query = search.trim();
+      const hasExact = options.some(
+        (opt) =>
+          opt.value.toLowerCase() === query.toLowerCase() ||
+          opt.label.toLowerCase() === query.toLowerCase()
+      );
+      if (!hasExact) {
+        return [
+          ...filtered,
+          {
+            value: query,
+            label: customValueLabel ? customValueLabel(query) : `Use "${query}"`,
+            badge: "Custom Code",
+          },
+        ];
+      }
+    }
+
+    return filtered;
+  }, [options, search, allowCustomValue, customValueLabel]);
+
+  const selectedOption =
+    options.find((opt) => opt.value === currentValue) ||
+    (allowCustomValue && currentValue
+      ? { value: currentValue, label: currentValue }
+      : undefined);
 
   function open() {
     if (disabled) return;
@@ -210,8 +248,20 @@ export function SearchableSelect({
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => select(opt.value)}
                     >
-                      <span className="min-w-0 flex-1 truncate">{opt.label}</span>
-                      {isSelected && <Check className="dropdown-check" strokeWidth={2} />}
+                      <div className="min-w-0 flex-1 flex flex-col gap-0.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-semibold text-foreground truncate">{opt.label}</span>
+                          {opt.badge && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-muted text-muted-foreground uppercase shrink-0">
+                              {opt.badge}
+                            </span>
+                          )}
+                        </div>
+                        {opt.description && (
+                          <span className="text-[11px] text-muted-foreground truncate">{opt.description}</span>
+                        )}
+                      </div>
+                      {isSelected && <Check className="dropdown-check shrink-0" strokeWidth={2} />}
                     </div>
                   );
                 })

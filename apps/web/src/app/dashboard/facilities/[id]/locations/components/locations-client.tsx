@@ -9,6 +9,7 @@ import { ActionDropdown } from "@/components/ui/action-dropdown";
 import { exportLocationsToCsv } from "@/lib/locations/csv-engine";
 import { updateLocation, deleteLocation } from "../actions";
 import { CreateLocationModal } from "./create-location-modal";
+import { EditLocationModal } from "./edit-location-modal";
 import { GeneratorModal } from "./generator-modal";
 import { LabelPrintModal } from "./label-print-modal";
 import { CsvImportModal } from "./csv-import-modal";
@@ -78,6 +79,7 @@ export function LocationsClient({
 
   // Modals state
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editingLocation, setEditingLocation] = useState<any | null>(null);
   const [isGeneratorOpen, setIsGeneratorOpen] = useState(false);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -519,6 +521,11 @@ export function LocationsClient({
                         <ActionDropdown
                           actions={[
                             {
+                              label: "Edit Location",
+                              icon: <Edit2 className="w-4 h-4" />,
+                              onClick: () => setEditingLocation(loc),
+                            },
+                            {
                               label: "Print Barcode Label",
                               icon: <Printer className="w-4 h-4" />,
                               onClick: () => handleOpenPrint([loc]),
@@ -620,6 +627,16 @@ export function LocationsClient({
         onClose={() => setIsCreateOpen(false)}
         facility={facility}
         onSuccess={() => router.refresh()}
+      />
+
+      <EditLocationModal
+        isOpen={!!editingLocation}
+        onClose={() => setEditingLocation(null)}
+        location={editingLocation}
+        facilityId={facility.id}
+        onSuccess={(updatedLoc) => {
+          setLocations((prev) => prev.map((l) => (l.id === updatedLoc.id ? updatedLoc : l)));
+        }}
       />
 
       <GeneratorModal

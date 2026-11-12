@@ -17,6 +17,8 @@ import {
   LogOut,
   Shield,
   Smartphone,
+  Package,
+  Boxes,
 } from "lucide-react";
 import { ThemeToggle } from "./ui/theme-toggle";
 import { WorkspaceSwitcher } from "./workspace-switcher";
@@ -66,6 +68,8 @@ export function AppShell({ children, context }: AppShellProps) {
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["owner", "admin", "ops_manager", "supervisor", "floor_worker", "billing", "client_user"] },
     { name: "Facilities", href: "/dashboard/facilities", icon: Building, roles: ["owner", "admin", "ops_manager", "supervisor"] },
     { name: "Clients", href: "/dashboard/clients", icon: Users, roles: ["owner", "admin", "ops_manager", "supervisor", "billing"] },
+    { name: "Catalog", href: "/dashboard/catalog", icon: Package, roles: ["owner", "admin", "ops_manager", "supervisor", "billing", "client_user"] },
+    { name: "Inventory", href: "/dashboard/inventory", icon: Boxes, roles: ["owner", "admin", "ops_manager", "supervisor", "floor_worker", "client_user"] },
     { name: "Members", href: "/dashboard/members", icon: Shield, roles: ["owner", "admin", "ops_manager"] },
   ];
 

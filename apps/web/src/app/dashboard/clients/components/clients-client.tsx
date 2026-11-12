@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Plus, Search, Users, Mail, Phone, Building2, X, Trash2, Edit2, PauseCircle, PlayCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Plus, Search, Users, Mail, Phone, Building2, X, Trash2, Edit2, PauseCircle, PlayCircle, ExternalLink, ArrowUpRight, Package, Boxes } from "lucide-react";
 import { createClientAccount, deleteClientAccount, updateClientAccount, setClientStatus } from "../actions";
 import { toast } from "sonner";
 import { ActionDropdown } from "@/components/ui/action-dropdown";
@@ -42,6 +44,7 @@ export function ClientsClient({
   organizations: Org[];
   facilities: Facility[];
 }) {
+  const router = useRouter();
   const [clients, setClients] = useState<ClientAccount[]>(initialClients);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<ClientAccount | null>(null);
@@ -263,12 +266,23 @@ export function ClientsClient({
                 paginatedClients.map((client) => (
                   <tr key={client.id} className="hover:bg-gray-50/50 dark:hover:bg-white/5 transition-colors">
                     <td data-primary className="px-6 py-4 font-medium text-gray-900 dark:text-gray-100">
-                      <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-md bg-accent flex items-center justify-center text-brand-text font-bold text-lg">
-                        {client.name.charAt(0).toUpperCase()}
-                      </div>
-                      {client.name}
-                      </div>
+                      <Link
+                        href={`/dashboard/clients/${client.id}`}
+                        className="flex items-center gap-3 group/link hover:opacity-90"
+                      >
+                        <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary/10 to-primary/20 border border-primary/20 flex items-center justify-center text-primary font-bold text-base shadow-xs group-hover/link:scale-105 transition-transform">
+                          {client.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-1.5 font-semibold text-foreground group-hover/link:text-primary transition-colors">
+                            <span>{client.name}</span>
+                            <ArrowUpRight className="w-3.5 h-3.5 opacity-0 group-hover/link:opacity-100 transition-opacity text-primary" />
+                          </div>
+                          <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                            <span>Manage Catalog & Stock</span>
+                          </span>
+                        </div>
+                      </Link>
                     </td>
                     <td data-label="Code" className="px-6 py-4">
                       <span className="px-2.5 py-1 bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 rounded-md text-xs font-mono font-medium">
@@ -311,6 +325,11 @@ export function ClientsClient({
                     <td data-actions className="px-6 py-4 text-right">
                       <ActionDropdown 
                         actions={[
+                          {
+                            label: "Manage Client Hub",
+                            icon: <ExternalLink className="w-4 h-4 text-primary" />,
+                            onClick: () => router.push(`/dashboard/clients/${client.id}`)
+                          },
                           {
                             label: "Edit",
                             icon: <Edit2 className="w-4 h-4" />,

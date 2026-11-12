@@ -47,3 +47,4 @@ supabase/*logs*.md
 # media and temporary files
 .tempmediaStorage/
 .user_uploaded/
+.env*

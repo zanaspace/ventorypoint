@@ -2,23 +2,52 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { MoreVertical } from "lucide-react";
+import { MoreVertical, ChevronDown } from "lucide-react";
 import { useDropdownPosition } from "./use-dropdown-position";
 
 type ActionItem = {
   label: string;
+  description?: string;
   icon?: React.ReactNode;
   onClick: () => void;
   danger?: boolean;
+  disabled?: boolean;
 };
 
-export function ActionDropdown({ actions, label = "Options" }: { actions: ActionItem[]; label?: string }) {
+export function ActionDropdown({
+  actions,
+  label = "Options",
+  triggerText,
+  triggerIcon,
+  variant = "ghost",
+  align = "end",
+  width,
+  className,
+}: {
+  actions: ActionItem[];
+  label?: string;
+  triggerText?: string;
+  triggerIcon?: React.ReactNode;
+  variant?: "ghost" | "secondary" | "primary";
+  align?: "start" | "end";
+  width?: number;
+  className?: string;
+}) {
   const [isOpen, setIsOpen] = useState(false);
   const [highlighted, setHighlighted] = useState(0);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
-  const { style, side } = useDropdownPosition(buttonRef, isOpen, { align: "end", width: 192, minSpaceBelow: actions.length * 40 + 16 });
+
+  const hasDescriptions = actions.some((a) => Boolean(a.description));
+  const panelWidth = width ?? (hasDescriptions ? 260 : 200);
+  const minSpaceBelow = actions.length * (hasDescriptions ? 56 : 40) + 16;
+
+  const { style, side } = useDropdownPosition(buttonRef, isOpen, {
+    align,
+    width: panelWidth,
+    minSpaceBelow,
+  });
 
   function open() {
     setHighlighted(0);
@@ -47,6 +76,7 @@ export function ActionDropdown({ actions, label = "Options" }: { actions: Action
   }, [isOpen]);
 
   function run(action: ActionItem) {
+    if (action.disabled) return;
     close();
     action.onClick();
   }
@@ -106,21 +136,53 @@ export function ActionDropdown({ actions, label = "Options" }: { actions: Action
                 role="menuitem"
                 data-variant={action.danger ? "danger" : undefined}
                 data-highlighted={index === highlighted ? "" : undefined}
-                className="dropdown-item"
-                onMouseEnter={() => setHighlighted(index)}
+                className={`dropdown-item ${action.description ? "items-start py-2.5 px-3 text-left" : ""} ${
+                  action.disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+                }`}
+                onMouseEnter={() => !action.disabled && setHighlighted(index)}
                 onClick={(e) => {
                   e.stopPropagation();
                   run(action);
                 }}
               >
-                {action.icon}
-                <span className="min-w-0 flex-1 truncate">{action.label}</span>
+                {action.icon && (
+                  <div className={`shrink-0 ${action.description ? "mt-0.5" : ""}`}>
+                    {action.icon}
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="font-semibold text-foreground text-xs leading-none">
+                    {action.label}
+                  </div>
+                  {action.description && (
+                    <div className="text-[11px] text-muted-foreground mt-1 leading-snug font-normal">
+                      {action.description}
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
           </div>,
           document.body
         )
       : null;
+
+  let buttonClasses = "";
+  if (className) {
+    buttonClasses = className;
+  } else if (variant === "primary") {
+    buttonClasses = `inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary-hover rounded-md transition-all cursor-pointer shadow-sm active:scale-[0.99] ${
+      isOpen ? "ring-2 ring-primary/40 ring-offset-1" : ""
+    }`;
+  } else if (triggerText) {
+    buttonClasses = `inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg border border-border/80 bg-muted/40 hover:bg-muted text-foreground transition-all cursor-pointer shadow-xs ${
+      isOpen ? "bg-muted border-foreground/30 ring-1 ring-border" : ""
+    }`;
+  } else {
+    buttonClasses = `inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors cursor-pointer hover:bg-accent hover:text-accent-foreground ${
+      isOpen ? "bg-accent text-accent-foreground" : ""
+    }`;
+  }
 
   return (
     <>
@@ -138,15 +200,25 @@ export function ActionDropdown({ actions, label = "Options" }: { actions: Action
             open();
           }
         }}
-        className={`inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors cursor-pointer hover:bg-accent hover:text-accent-foreground ${
-          isOpen ? "bg-accent text-accent-foreground" : ""
-        }`}
+        className={buttonClasses}
         aria-label={label}
         aria-haspopup="menu"
         aria-expanded={isOpen}
         aria-controls={isOpen ? menuId : undefined}
       >
-        <MoreVertical className="size-[18px]" strokeWidth={1.5} />
+        {triggerText ? (
+          <>
+            {triggerIcon && <span className="shrink-0">{triggerIcon}</span>}
+            <span>{triggerText}</span>
+            <ChevronDown
+              className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                variant === "primary" ? "text-primary-foreground/80" : "text-muted-foreground"
+              } ${isOpen ? "rotate-180" : ""}`}
+            />
+          </>
+        ) : (
+          <MoreVertical className="size-[18px]" strokeWidth={1.5} />
+        )}
       </button>
       {menu}
     </>
