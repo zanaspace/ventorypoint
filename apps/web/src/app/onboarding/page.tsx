@@ -73,7 +73,7 @@ export default async function OnboardingPage(props: Props) {
   if (!isRequestingNew && memberships && memberships.length > 0) redirect("/revoked");
 
   // Came here mid invite-flow (e.g. just signed up with a code)? Finish joining first.
-  if (await hasPendingInvite()) redirect("/join/complete");
+  if (!isRequestingNew && (await hasPendingInvite())) redirect("/join/complete");
 
   // Invitations sent to this user's verified email
   const { data: pendingInvites } = await supabase.rpc("my_pending_invitations");
