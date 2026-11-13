@@ -113,8 +113,15 @@ export function MoveInventoryModal({
 
     setIsSubmitting(true);
     try {
+      const resolvedFacilityId =
+        ("facility_id" in balance && balance.facility_id)
+          ? balance.facility_id
+          : facilityId && facilityId !== "all"
+          ? facilityId
+          : "";
+
       const res = await moveInventoryAction({
-        facilityId,
+        facilityId: resolvedFacilityId,
         fromLocationId: locationId,
         fromContainerId: containerId,
         toLocationId: targetLocationCode.trim(), // Server RPC accepts full_code or UUID

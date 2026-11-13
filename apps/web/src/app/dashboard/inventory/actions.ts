@@ -678,12 +678,63 @@ export async function moveInventoryAction(payload: {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
+  let facilityId = payload.facilityId;
+  if (!facilityId || facilityId === "all") {
+    const { data: fromLoc } = await supabase
+      .from("locations")
+      .select("facility_id")
+      .eq("id", payload.fromLocationId)
+      .maybeSingle();
+    if (!fromLoc?.facility_id) {
+      return { success: false, error: "Could not resolve facility for this inventory location." };
+    }
+    facilityId = fromLoc.facility_id;
+  }
+
+  // Resolve toLocationId to UUID if a code/barcode was provided
+  let toLocationId = payload.toLocationId.trim();
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(toLocationId);
+  if (!isUuid) {
+    const { data: loc } = await supabase
+      .from("locations")
+      .select("id")
+      .eq("facility_id", facilityId)
+      .or(`full_code.eq.${toLocationId},barcode.eq.${toLocationId}`)
+      .maybeSingle();
+    if (!loc?.id) {
+      return {
+        success: false,
+        error: `Destination location "${toLocationId}" was not found in this facility.`,
+      };
+    }
+    toLocationId = loc.id;
+  }
+
+  // Resolve toContainerId to UUID if an LPN string was provided
+  let toContainerId = payload.toContainerId?.trim() || null;
+  if (toContainerId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(toContainerId)) {
+    const { data: existingCont } = await supabase
+      .from("containers")
+      .select("id")
+      .eq("facility_id", facilityId)
+      .eq("lpn", toContainerId)
+      .maybeSingle();
+    if (existingCont?.id) {
+      toContainerId = existingCont.id;
+    } else {
+      return {
+        success: false,
+        error: `Destination container "${toContainerId}" was not found in this facility.`,
+      };
+    }
+  }
+
   const { data, error } = await supabase.rpc("move_inventory", {
-    p_facility_id: payload.facilityId,
+    p_facility_id: facilityId,
     p_from_location_id: payload.fromLocationId,
     p_from_container_id: payload.fromContainerId || null,
-    p_to_location_id: payload.toLocationId,
-    p_to_container_id: payload.toContainerId || null,
+    p_to_location_id: toLocationId,
+    p_to_container_id: toContainerId,
     p_sku_id: payload.skuId,
     p_lot_id: payload.lotId || null,
     p_serial_id: payload.serialId || null,
@@ -806,8 +857,21 @@ export async function adjustInventoryAction(payload: {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
+  let facilityId = payload.facilityId;
+  if (!facilityId || facilityId === "all") {
+    const { data: loc } = await supabase
+      .from("locations")
+      .select("facility_id")
+      .eq("id", payload.locationId)
+      .maybeSingle();
+    if (!loc?.facility_id) {
+      return { success: false, error: "Could not resolve facility for this inventory location." };
+    }
+    facilityId = loc.facility_id;
+  }
+
   const { data, error } = await supabase.rpc("adjust_inventory", {
-    p_facility_id: payload.facilityId,
+    p_facility_id: facilityId,
     p_location_id: payload.locationId,
     p_container_id: payload.containerId || null,
     p_sku_id: payload.skuId,
@@ -887,8 +951,21 @@ export async function changeInventoryStatusAction(payload: {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
+  let facilityId = payload.facilityId;
+  if (!facilityId || facilityId === "all") {
+    const { data: loc } = await supabase
+      .from("locations")
+      .select("facility_id")
+      .eq("id", payload.locationId)
+      .maybeSingle();
+    if (!loc?.facility_id) {
+      return { success: false, error: "Could not resolve facility for this inventory location." };
+    }
+    facilityId = loc.facility_id;
+  }
+
   const { data, error } = await supabase.rpc("change_inventory_status", {
-    p_facility_id: payload.facilityId,
+    p_facility_id: facilityId,
     p_location_id: payload.locationId,
     p_container_id: payload.containerId || null,
     p_sku_id: payload.skuId,

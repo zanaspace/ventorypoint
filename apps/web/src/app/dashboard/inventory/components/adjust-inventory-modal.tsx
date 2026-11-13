@@ -65,8 +65,11 @@ export function AdjustInventoryModal({
 
     setIsSubmitting(true);
     try {
+      const resolvedFacilityId =
+        balance.facility_id || (facilityId && facilityId !== "all" ? facilityId : "");
+
       const res = await adjustInventoryAction({
-        facilityId,
+        facilityId: resolvedFacilityId,
         locationId: balance.location_id,
         containerId: balance.container_id,
         skuId: balance.sku_id,
