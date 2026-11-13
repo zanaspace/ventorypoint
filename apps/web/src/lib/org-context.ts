@@ -71,16 +71,16 @@ const getCachedWorkspaceContext = cache(async (): Promise<WorkspaceContext | nul
   // 5. Fetch facilities for the active organization
   const { data: facilitiesData } = await supabase
     .from("facilities")
-    .select("id, name, short_code, city, is_active")
+    .select("id, name, short_code, city")
     .eq("organization_id", activeOrg.id)
     .order("name", { ascending: true });
 
   const facilities: WorkspaceFacility[] = (facilitiesData || []).map((f: any) => ({
     id: f.id,
     name: f.name,
-    code: f.short_code || f.code || "",
+    code: f.short_code || "",
     city: f.city || "",
-    is_active: f.is_active ?? true,
+    is_active: true,
   }));
 
   // 6. Resolve active facility ID
