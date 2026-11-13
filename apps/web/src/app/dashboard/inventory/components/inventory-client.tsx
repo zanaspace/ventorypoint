@@ -43,6 +43,7 @@ import { ChangeStatusModal } from "./change-status-modal";
 import { ContainerModal } from "./container-modal";
 import { AdjustmentApprovalModal } from "./adjustment-approval-modal";
 import { BatchInboundReceiptModal } from "./batch-inbound-receipt-modal";
+import { InventoryHelpTooltip } from "./inventory-tab-tooltip";
 import { Sku } from "@/lib/types/catalog";
 import { useRouter } from "next/navigation";
 import { evaluateExpiryAction, runReconciliationAction, deleteContainerAction } from "../actions";
@@ -307,6 +308,7 @@ export function InventoryClient({
             >
               <Search className="w-3.5 h-3.5 text-primary-foreground" />
               <span>&ldquo;Where Is It?&rdquo; Scan</span>
+              <InventoryHelpTooltip guideKey="where_is_it" variant="light" />
             </button>
 
             {/* Inbound Stock Intake */}
@@ -316,6 +318,7 @@ export function InventoryClient({
             >
               <Boxes className="w-3.5 h-3.5 text-white" />
               <span>Inbound Receipt</span>
+              <InventoryHelpTooltip guideKey="inbound_receipt" variant="light" />
             </button>
 
             {/* New Container LPN Button */}
@@ -329,6 +332,7 @@ export function InventoryClient({
             >
               <Plus className="w-3.5 h-3.5 text-primary" />
               <span>New LPN</span>
+              <InventoryHelpTooltip guideKey="new_lpn" />
             </button>
 
             {/* Evaluate Expiry Button */}
@@ -336,10 +340,10 @@ export function InventoryClient({
               onClick={handleEvaluateExpiry}
               disabled={isEvaluatingExpiry}
               className="col-span-1 sm:col-auto px-3 py-2 bg-surface hover:bg-muted text-muted-foreground hover:text-foreground border border-border rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1.5 cursor-pointer min-h-[38px]"
-              title="Evaluate FEFO shelf-life rules and auto-segregate expired lots"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isEvaluatingExpiry ? "animate-spin text-primary" : ""}`} />
               <span>FEFO Expiry</span>
+              <InventoryHelpTooltip guideKey="fefo_expiry" />
             </button>
 
             {/* Reconcile Ledger Button */}
@@ -347,10 +351,10 @@ export function InventoryClient({
               onClick={handleRunReconciliation}
               disabled={isReconciling}
               className="col-span-1 sm:col-auto px-3 py-2 bg-surface hover:bg-muted text-muted-foreground hover:text-foreground border border-border rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1.5 cursor-pointer min-h-[38px]"
-              title="Verify live balances match complete event projection"
             >
               <FileCheck className={`w-3.5 h-3.5 ${isReconciling ? "animate-spin text-primary" : ""}`} />
               <span>Reconcile</span>
+              <InventoryHelpTooltip guideKey="reconcile" />
             </button>
           </div>
         </div>
@@ -371,6 +375,7 @@ export function InventoryClient({
           <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-muted text-muted-foreground">
             {filteredBalances.length}
           </span>
+          <InventoryHelpTooltip guideKey="balances" />
         </button>
 
         <button
@@ -386,6 +391,7 @@ export function InventoryClient({
           <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-muted text-muted-foreground">
             {filteredContainers.length}
           </span>
+          <InventoryHelpTooltip guideKey="containers" />
         </button>
 
         <button
@@ -401,6 +407,7 @@ export function InventoryClient({
           <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-muted text-muted-foreground">
             {filteredLots.length}
           </span>
+          <InventoryHelpTooltip guideKey="lots" />
         </button>
 
         <button
@@ -416,6 +423,7 @@ export function InventoryClient({
           <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-muted text-muted-foreground">
             {initialSerials.length}
           </span>
+          <InventoryHelpTooltip guideKey="serials" />
         </button>
 
         <button
@@ -435,6 +443,7 @@ export function InventoryClient({
           ) : (
             <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-muted text-muted-foreground">0</span>
           )}
+          <InventoryHelpTooltip guideKey="adjustments" />
         </button>
 
         <button
@@ -450,6 +459,7 @@ export function InventoryClient({
           <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-muted text-muted-foreground">
             {initialTransactionsTotal}
           </span>
+          <InventoryHelpTooltip guideKey="transactions" />
         </button>
       </div>
 
