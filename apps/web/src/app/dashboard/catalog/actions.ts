@@ -2,10 +2,12 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
+import { getActiveWorkspaceContext } from "@/lib/org-context";
 import { parseCatalogCsv, exportCatalogToCsv } from "@/lib/catalog/csv-engine";
 import { Sku, CatalogCompleteness } from "@/lib/types/catalog";
 
 export async function getSkus(params: {
+  organizationId?: string;
   clientId?: string;
   query?: string;
   trackingClass?: string;
@@ -14,6 +16,11 @@ export async function getSkus(params: {
   pageSize?: number;
 } = {}) {
   const supabase = await createClient();
+  const orgId = params.organizationId || (await getActiveWorkspaceContext())?.activeOrg?.id;
+  if (!orgId) {
+    return { skus: [], total: 0, error: null };
+  }
+
   const page = params.page || 1;
   const pageSize = params.pageSize || 50;
   const from = (page - 1) * pageSize;
@@ -27,6 +34,7 @@ export async function getSkus(params: {
       uoms:sku_uoms(*),
       barcodes:sku_barcodes(*)
     `, { count: "exact" })
+    .eq("organization_id", orgId)
     .order("code", { ascending: true });
 
   if (params.clientId && params.clientId !== "all") {
@@ -86,23 +94,12 @@ export async function getClientCompleteness(clientId: string): Promise<CatalogCo
 
 export async function resolveBarcodeAction(barcode: string, clientId?: string) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const context = await getActiveWorkspaceContext();
 
-  if (!user) return { match: null, error: "Unauthorized" };
-
-  // Get active org
-  const { data: member } = await supabase
-    .from("organization_members")
-    .select("organization_id")
-    .eq("user_id", user.id)
-    .single();
-
-  if (!member) return { match: null, error: "No organization membership found" };
+  if (!context?.activeOrg) return { match: null, error: "No active organization found" };
 
   const { data, error } = await supabase.rpc("resolve_barcode", {
-    p_organization_id: member.organization_id,
+    p_organization_id: context.activeOrg.id,
     p_barcode: barcode.trim(),
     p_client_id: clientId || null,
   });

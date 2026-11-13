@@ -62,12 +62,12 @@ export default async function InventoryPage() {
       .select("id, name, short_code")
       .eq("organization_id", context.activeOrg.id)
       .order("name", { ascending: true }),
-    getInventoryBalances({ facilityId: activeFacilityId, page: 1, pageSize: 50 }),
-    getContainers({ facilityId: activeFacilityId }),
-    getLots(),
-    getSerials({ page: 1, pageSize: 50 }),
-    getAdjustments(activeFacilityId),
-    getTransactions({ facilityId: activeFacilityId, page: 1, pageSize: 50 }),
+    getInventoryBalances({ organizationId: context.activeOrg.id, facilityId: activeFacilityId, page: 1, pageSize: 50 }),
+    getContainers({ organizationId: context.activeOrg.id, facilityId: activeFacilityId }),
+    getLots({ organizationId: context.activeOrg.id }),
+    getSerials({ organizationId: context.activeOrg.id, facilityId: activeFacilityId, page: 1, pageSize: 50 }),
+    getAdjustments(activeFacilityId, context.activeOrg.id),
+    getTransactions({ organizationId: context.activeOrg.id, facilityId: activeFacilityId, page: 1, pageSize: 50 }),
     getAdjustmentReasons(),
     supabase
       .from("skus")

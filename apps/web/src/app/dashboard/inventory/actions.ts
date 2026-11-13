@@ -2,6 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
+import { getActiveWorkspaceContext } from "@/lib/org-context";
 import {
   InventoryBalance,
   InventoryTransaction,
@@ -19,6 +20,7 @@ import {
 
 // 1. Fetch Balances
 export async function getInventoryBalances(params: {
+  organizationId?: string;
   facilityId?: string;
   clientId?: string;
   query?: string;
@@ -28,6 +30,11 @@ export async function getInventoryBalances(params: {
   pageSize?: number;
 } = {}) {
   const supabase = await createClient();
+  const orgId = params.organizationId || (await getActiveWorkspaceContext())?.activeOrg?.id;
+  if (!orgId) {
+    return { balances: [], total: 0, error: null };
+  }
+
   const page = params.page || 1;
   const pageSize = params.pageSize || 50;
   const from = (page - 1) * pageSize;
@@ -43,6 +50,7 @@ export async function getInventoryBalances(params: {
       lot:lots(id, lot_number, expiry_date, expiry_status),
       serial:serials(id, serial_number, status)
     `, { count: "exact" })
+    .eq("organization_id", orgId)
     .order("updated_at", { ascending: false });
 
   if (params.stockFilter === "out_of_stock") {
@@ -402,11 +410,16 @@ export async function receiveBatchInventoryAction(payload: ReceiveBatchPayload) 
 
 // 2. Fetch Containers (LPNs)
 export async function getContainers(params: {
+  organizationId?: string;
   facilityId?: string;
   query?: string;
   containerType?: string;
 } = {}) {
   const supabase = await createClient();
+  const orgId = params.organizationId || (await getActiveWorkspaceContext())?.activeOrg?.id;
+  if (!orgId) {
+    return { containers: [], error: null };
+  }
 
   let query = supabase
     .from("containers")
@@ -415,6 +428,7 @@ export async function getContainers(params: {
       location:locations(full_code, human_path),
       parent_container:containers!parent_container_id(lpn, container_type)
     `)
+    .eq("organization_id", orgId)
     .order("created_at", { ascending: false });
 
   if (params.facilityId && params.facilityId !== "all") {
@@ -441,11 +455,16 @@ export async function getContainers(params: {
 
 // 3. Fetch Lots (Expiry / Rotation View)
 export async function getLots(params: {
+  organizationId?: string;
   clientId?: string;
   expiryStatus?: string;
   query?: string;
 } = {}) {
   const supabase = await createClient();
+  const orgId = params.organizationId || (await getActiveWorkspaceContext())?.activeOrg?.id;
+  if (!orgId) {
+    return { lots: [], error: null };
+  }
 
   let query = supabase
     .from("lots")
@@ -454,6 +473,7 @@ export async function getLots(params: {
       sku:skus(code, name, rotation_rule),
       client:client_accounts(name, short_code)
     `)
+    .eq("organization_id", orgId)
     .order("expiry_date", { ascending: true, nullsFirst: false });
 
   if (params.clientId && params.clientId !== "all") {
@@ -480,6 +500,8 @@ export async function getLots(params: {
 
 // 4. Fetch Serials
 export async function getSerials(params: {
+  organizationId?: string;
+  facilityId?: string;
   skuId?: string;
   status?: string;
   query?: string;
@@ -487,6 +509,11 @@ export async function getSerials(params: {
   pageSize?: number;
 } = {}) {
   const supabase = await createClient();
+  const orgId = params.organizationId || (await getActiveWorkspaceContext())?.activeOrg?.id;
+  if (!orgId) {
+    return { serials: [], total: 0, error: null };
+  }
+
   const page = params.page || 1;
   const pageSize = params.pageSize || 50;
   const from = (page - 1) * pageSize;
@@ -501,7 +528,12 @@ export async function getSerials(params: {
       location:locations(full_code, human_path),
       container:containers(lpn)
     `, { count: "exact" })
+    .eq("organization_id", orgId)
     .order("last_moved_at", { ascending: false });
+
+  if (params.facilityId && params.facilityId !== "all") {
+    query = query.eq("current_facility_id", params.facilityId);
+  }
 
   if (params.skuId && params.skuId !== "all") {
     query = query.eq("sku_id", params.skuId);
@@ -526,8 +558,12 @@ export async function getSerials(params: {
 }
 
 // 5. Fetch Pending Adjustments (Approval Queue)
-export async function getAdjustments(facilityId?: string) {
+export async function getAdjustments(facilityId?: string, organizationId?: string) {
   const supabase = await createClient();
+  const orgId = organizationId || (await getActiveWorkspaceContext())?.activeOrg?.id;
+  if (!orgId) {
+    return { adjustments: [], error: null };
+  }
 
   let query = supabase
     .from("inventory_adjustments")
@@ -538,6 +574,7 @@ export async function getAdjustments(facilityId?: string) {
       container:containers(lpn),
       lot:lots(lot_number)
     `)
+    .eq("organization_id", orgId)
     .order("created_at", { ascending: false });
 
   if (facilityId && facilityId !== "all") {
@@ -556,12 +593,18 @@ export async function getAdjustments(facilityId?: string) {
 
 // 6. Fetch Transactions (Append-Only Physical History)
 export async function getTransactions(params: {
+  organizationId?: string;
   facilityId?: string;
   skuId?: string;
   page?: number;
   pageSize?: number;
 } = {}) {
   const supabase = await createClient();
+  const orgId = params.organizationId || (await getActiveWorkspaceContext())?.activeOrg?.id;
+  if (!orgId) {
+    return { transactions: [], total: 0, error: null };
+  }
+
   const page = params.page || 1;
   const pageSize = params.pageSize || 50;
   const from = (page - 1) * pageSize;
@@ -579,6 +622,7 @@ export async function getTransactions(params: {
       from_container:containers!from_container_id(lpn),
       to_container:containers!to_container_id(lpn)
     `, { count: "exact" })
+    .eq("organization_id", orgId)
     .order("created_at", { ascending: false });
 
   if (params.facilityId && params.facilityId !== "all") {

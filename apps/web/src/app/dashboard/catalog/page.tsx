@@ -32,7 +32,7 @@ export default async function CatalogPage() {
       .select("id, name, short_code")
       .eq("organization_id", context.activeOrg.id)
       .order("name", { ascending: true }),
-    getSkus({ page: 1, pageSize: 50 }),
+    getSkus({ organizationId: context.activeOrg.id, page: 1, pageSize: 50 }),
   ]);
 
   const clients = clientsRes.data || [];
