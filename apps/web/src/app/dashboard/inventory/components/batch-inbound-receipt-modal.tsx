@@ -331,7 +331,13 @@ export function BatchInboundReceiptModal({
                   label: loc.full_code,
                   badge: loc.location_type.replace(/_/g, " "),
                 }))}
-                placeholder={locations.length === 0 ? "Loading locations..." : "Choose default rack..."}
+                placeholder={
+                  isLoadingLocations
+                    ? "Loading locations..."
+                    : locations.length === 0
+                    ? "No locations in facility"
+                    : "Choose default rack..."
+                }
                 searchable={locations.length > 5}
               />
               <p className="text-[10px] text-muted-foreground mt-0.5">

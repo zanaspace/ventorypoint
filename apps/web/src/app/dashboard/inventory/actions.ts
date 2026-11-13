@@ -1242,9 +1242,16 @@ export interface FacilityLocationOption {
 
 export async function getFacilityLocationsAction(facilityId: string): Promise<FacilityLocationOption[]> {
   const supabase = await createClient();
+  const orgId = (await getActiveWorkspaceContext())?.activeOrg?.id;
+  if (!orgId) {
+    return [];
+  }
+
   let query = supabase
     .from("locations")
     .select("id, full_code, barcode, human_path, location_type")
+    .eq("organization_id", orgId)
+    .eq("active", true)
     .order("full_code", { ascending: true });
 
   if (facilityId && facilityId !== "all") {
