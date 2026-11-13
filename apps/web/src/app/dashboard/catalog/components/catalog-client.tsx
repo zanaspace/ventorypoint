@@ -202,10 +202,10 @@ export function CatalogClient({
 
       {/* Control Bar: Filters & Actions */}
       <div className="space-y-3">
-        {/* Top Row: Search + Action Buttons */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+        {/* Top Controls: Search + Action Buttons */}
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-2.5">
           {/* Search Box */}
-          <div className="relative flex-1 min-w-[200px]">
+          <div className="relative flex-1 min-w-0">
             <input
               type="text"
               value={searchQuery}
@@ -219,64 +219,71 @@ export function CatalogClient({
             <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 sm:pb-0 shrink-0">
-            <button
-              type="button"
-              onClick={() => setIsLookupOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-md border border-input hover:bg-accent transition-colors cursor-pointer whitespace-nowrap"
-            >
-              <ScanLine className="w-4 h-4 text-brand" />
-              <span>Lookup</span>
-            </button>
+          {/* Action Buttons: Touch-friendly grid on mobile, flex row on tablet/desktop */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            {/* Utility actions: 3-column equal grid on phone */}
+            <div className="grid grid-cols-3 sm:flex sm:items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setIsLookupOpen(true)}
+                className="flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-2 text-xs font-semibold rounded-md border border-input hover:bg-accent transition-colors cursor-pointer whitespace-nowrap"
+              >
+                <ScanLine className="w-4 h-4 text-brand shrink-0" />
+                <span>Lookup</span>
+              </button>
 
-            <button
-              type="button"
-              onClick={() => setIsImportOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-md border border-input hover:bg-accent transition-colors cursor-pointer whitespace-nowrap"
-            >
-              <FileUp className="w-4 h-4" />
-              <span>Import</span>
-            </button>
+              <button
+                type="button"
+                onClick={() => setIsImportOpen(true)}
+                className="flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-2 text-xs font-semibold rounded-md border border-input hover:bg-accent transition-colors cursor-pointer whitespace-nowrap"
+              >
+                <FileUp className="w-4 h-4 shrink-0" />
+                <span>Import</span>
+              </button>
 
-            <button
-              type="button"
-              onClick={handleExportCsv}
-              disabled={filteredSkus.length === 0}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-md border border-input hover:bg-accent transition-colors disabled:opacity-40 cursor-pointer whitespace-nowrap"
-            >
-              <Download className="w-4 h-4" />
-              <span>Export</span>
-            </button>
+              <button
+                type="button"
+                onClick={handleExportCsv}
+                disabled={filteredSkus.length === 0}
+                className="flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-2 text-xs font-semibold rounded-md border border-input hover:bg-accent transition-colors disabled:opacity-40 cursor-pointer whitespace-nowrap"
+              >
+                <Download className="w-4 h-4 shrink-0" />
+                <span>Export</span>
+              </button>
+            </div>
 
-            <ActionDropdown
-              variant="primary"
-              triggerText="Add Product"
-              triggerIcon={<Plus className="w-4 h-4" />}
-              align="end"
-              width={260}
-              actions={[
-                {
-                  label: "Add Single Product",
-                  description: "Detailed form with tracking rules & barcode",
-                  icon: <Plus className="w-4 h-4 text-primary" />,
-                  onClick: () => setIsCreateOpen(true),
-                },
-                {
-                  label: "Add Multiple Products",
-                  description: "Fast multi-line entry in a single table",
-                  icon: <Layers className="w-4 h-4 text-primary" />,
-                  onClick: () => setIsBatchCreateOpen(true),
-                },
-              ]}
-            />
+            {/* Primary Action: Full-width on mobile, auto-width on tablet/desktop */}
+            <div className="w-full sm:w-auto">
+              <ActionDropdown
+                variant="primary"
+                triggerText="Add Product"
+                triggerIcon={<Plus className="w-4 h-4" />}
+                align="end"
+                width={260}
+                className="w-full justify-center"
+                actions={[
+                  {
+                    label: "Add Single Product",
+                    description: "Detailed form with tracking rules & barcode",
+                    icon: <Plus className="w-4 h-4 text-primary" />,
+                    onClick: () => setIsCreateOpen(true),
+                  },
+                  {
+                    label: "Add Multiple Products",
+                    description: "Fast multi-line entry in a single table",
+                    icon: <Layers className="w-4 h-4 text-primary" />,
+                    onClick: () => setIsBatchCreateOpen(true),
+                  },
+                ]}
+              />
+            </div>
           </div>
         </div>
 
-        {/* Second Row: Dropdown Filters */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          {/* Client Filter */}
-          <div>
+        {/* Second Row: Dropdown Filters (2-col on phone, 3-col on desktop) */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {/* Client Filter - Full width on phone */}
+          <div className="col-span-2 sm:col-span-1">
             <SearchableSelect
               value={selectedClientId}
               onChange={(v) => {
@@ -291,7 +298,7 @@ export function CatalogClient({
           </div>
 
           {/* Tracking Class Filter */}
-          <div>
+          <div className="col-span-1">
             <SearchableSelect
               value={selectedTracking}
               onChange={(v) => {
@@ -309,7 +316,7 @@ export function CatalogClient({
           </div>
 
           {/* Rotation Rule Filter */}
-          <div>
+          <div className="col-span-1">
             <SearchableSelect
               value={selectedRotation}
               onChange={(v) => {

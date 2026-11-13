@@ -42,6 +42,12 @@ export function AppShell({ children, context }: AppShellProps) {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  useEffect(() => {
+    setIsNavigating(false);
+  }, [pathname]);
+
   // Close the account menu on outside click or Escape
   useEffect(() => {
     if (!isUserMenuOpen) return;
@@ -160,7 +166,11 @@ export function AppShell({ children, context }: AppShellProps) {
               <Link
                 key={item.name}
                 href={item.href}
-                onClick={() => setIsMobileOpen(false)}
+                prefetch={true}
+                onClick={() => {
+                  setIsMobileOpen(false);
+                  if (item.href !== pathname) setIsNavigating(true);
+                }}
                 aria-current={isActive ? "page" : undefined}
                 className={`group flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors duration-150 ${
                   isActive
@@ -186,6 +196,11 @@ export function AppShell({ children, context }: AppShellProps) {
           {/* Quick link to Floor Terminal */}
           <Link
             href="/floor-login"
+            prefetch={true}
+            onClick={() => {
+              setIsMobileOpen(false);
+              setIsNavigating(true);
+            }}
             className={`group flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-sidebar-foreground hover:bg-accent hover:text-accent-foreground transition-colors ${
               isCollapsed ? "justify-center px-0" : ""
             }`}
@@ -200,6 +215,11 @@ export function AppShell({ children, context }: AppShellProps) {
           {canAccessSettings && (
             <Link
               href="/dashboard/settings"
+              prefetch={true}
+              onClick={() => {
+                setIsMobileOpen(false);
+                if (!pathname.startsWith("/dashboard/settings")) setIsNavigating(true);
+              }}
               aria-current={pathname.startsWith("/dashboard/settings") ? "page" : undefined}
               className={`group flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
                 pathname.startsWith("/dashboard/settings")
@@ -221,7 +241,13 @@ export function AppShell({ children, context }: AppShellProps) {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+        {/* Instant Route Transition Bar */}
+        {isNavigating && (
+          <div className="fixed top-0 left-0 right-0 h-1 bg-brand/20 overflow-hidden z-[9999] pointer-events-none">
+            <div className="h-full bg-brand w-2/5 animate-[pulse_0.6s_ease-in-out_infinite]" />
+          </div>
+        )}
         {/* Top Header */}
         <header className="h-16 bg-background border-b border-border flex items-center justify-between px-4 lg:px-6 shrink-0">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">

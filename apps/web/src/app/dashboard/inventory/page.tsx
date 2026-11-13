@@ -34,24 +34,20 @@ export default async function InventoryPage() {
     redirect("/onboarding");
   }
 
-  // Fetch facilities for this organization
-  const { data: facilities } = await supabase
-    .from("facilities")
-    .select("id, name, short_code")
-    .eq("organization_id", context.activeOrg.id)
-    .order("name", { ascending: true });
+  const facilities = (context.facilities || []).map((f) => ({
+    id: f.id,
+    name: f.name,
+    short_code: f.code,
+  }));
 
-  // Fetch clients for this organization
-  const { data: clients } = await supabase
-    .from("client_accounts")
-    .select("id, name, short_code")
-    .eq("organization_id", context.activeOrg.id)
-    .order("name", { ascending: true });
+  const activeFacilityId =
+    context.activeFacilityId && context.activeFacilityId !== "all"
+      ? context.activeFacilityId
+      : facilities[0]?.id || "";
 
-  const activeFacilityId = context.activeFacilityId || facilities?.[0]?.id || "";
-
-  // Fetch initial ledger data
+  // Fetch clients and initial ledger data concurrently in a single batch
   const [
+    clientsRes,
     balancesRes,
     containersRes,
     lotsRes,
@@ -61,6 +57,11 @@ export default async function InventoryPage() {
     reasons,
     skusRes,
   ] = await Promise.all([
+    supabase
+      .from("client_accounts")
+      .select("id, name, short_code")
+      .eq("organization_id", context.activeOrg.id)
+      .order("name", { ascending: true }),
     getInventoryBalances({ facilityId: activeFacilityId, page: 1, pageSize: 50 }),
     getContainers({ facilityId: activeFacilityId }),
     getLots(),
@@ -75,6 +76,7 @@ export default async function InventoryPage() {
       .order("name", { ascending: true }),
   ]);
 
+  const clients = clientsRes?.data || [];
   const skus = (skusRes?.data || []) as any[];
 
   return (

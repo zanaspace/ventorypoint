@@ -25,22 +25,23 @@ export default async function CatalogPage() {
     redirect("/onboarding");
   }
 
-  // Fetch client accounts in this organization
-  const { data: clients } = await supabase
-    .from("client_accounts")
-    .select("id, name, short_code")
-    .eq("organization_id", context.activeOrg.id)
-    .order("name", { ascending: true });
+  // Fetch client accounts and initial SKUs in parallel
+  const [clientsRes, skusRes] = await Promise.all([
+    supabase
+      .from("client_accounts")
+      .select("id, name, short_code")
+      .eq("organization_id", context.activeOrg.id)
+      .order("name", { ascending: true }),
+    getSkus({ page: 1, pageSize: 50 }),
+  ]);
 
-  // Fetch facilities in this organization
-  const { data: facilities } = await supabase
-    .from("facilities")
-    .select("id, name, short_code")
-    .eq("organization_id", context.activeOrg.id)
-    .order("name", { ascending: true });
-
-  // Fetch initial SKUs
-  const { skus, total } = await getSkus({ page: 1, pageSize: 50 });
+  const clients = clientsRes.data || [];
+  const { skus, total } = skusRes;
+  const facilities = (context.facilities || []).map((f) => ({
+    id: f.id,
+    name: f.name,
+    short_code: f.code,
+  }));
 
   return (
     <div className="space-y-6">

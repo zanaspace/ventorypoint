@@ -1,5 +1,6 @@
 "use server";
 
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
@@ -11,25 +12,25 @@ import {
   type WorkspaceContext,
 } from "./org-context-types";
 
-export async function getActiveWorkspaceContext(): Promise<WorkspaceContext | null> {
+const getCachedWorkspaceContext = cache(async (): Promise<WorkspaceContext | null> => {
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
-  // 1. Fetch user's profile
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("first_name, last_name, email")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  // 2. Fetch active memberships
-  const { data: members } = await supabase
-    .from("organization_members")
-    .select("organization_id, role, all_facilities")
-    .eq("user_id", user.id)
-    .eq("is_active", true);
+  // 1 & 2. Fetch user's profile and active memberships concurrently
+  const [{ data: profile }, { data: members }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("first_name, last_name, email")
+      .eq("id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("organization_members")
+      .select("organization_id, role, all_facilities")
+      .eq("user_id", user.id)
+      .eq("is_active", true),
+  ]);
 
   if (!members || members.length === 0) return null;
 
@@ -102,6 +103,10 @@ export async function getActiveWorkspaceContext(): Promise<WorkspaceContext | nu
     activeFacilityId,
     role: activeOrg.role,
   };
+});
+
+export async function getActiveWorkspaceContext(): Promise<WorkspaceContext | null> {
+  return getCachedWorkspaceContext();
 }
 
 export async function switchActiveOrganization(orgId: string) {

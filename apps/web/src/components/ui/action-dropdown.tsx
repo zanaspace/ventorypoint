@@ -167,22 +167,21 @@ export function ActionDropdown({
         )
       : null;
 
-  let buttonClasses = "";
-  if (className) {
-    buttonClasses = className;
-  } else if (variant === "primary") {
-    buttonClasses = `inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary-hover rounded-md transition-all cursor-pointer shadow-sm active:scale-[0.99] ${
+  let baseClasses = "";
+  if (variant === "primary") {
+    baseClasses = `inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary-hover rounded-md transition-all cursor-pointer shadow-sm active:scale-[0.99] ${
       isOpen ? "ring-2 ring-primary/40 ring-offset-1" : ""
     }`;
   } else if (triggerText) {
-    buttonClasses = `inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg border border-border/80 bg-muted/40 hover:bg-muted text-foreground transition-all cursor-pointer shadow-xs ${
+    baseClasses = `inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg border border-border/80 bg-muted/40 hover:bg-muted text-foreground transition-all cursor-pointer shadow-xs ${
       isOpen ? "bg-muted border-foreground/30 ring-1 ring-border" : ""
     }`;
   } else {
-    buttonClasses = `inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors cursor-pointer hover:bg-accent hover:text-accent-foreground ${
+    baseClasses = `inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors cursor-pointer hover:bg-accent hover:text-accent-foreground ${
       isOpen ? "bg-accent text-accent-foreground" : ""
     }`;
   }
+  const buttonClasses = className ? `${baseClasses} ${className}` : baseClasses;
 
   return (
     <>
