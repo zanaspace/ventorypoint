@@ -3,39 +3,36 @@
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { getOrgEntitlements } from "@/lib/entitlements";
+import { getActiveWorkspaceContext } from "@/lib/org-context";
 import { stripe, PLAN_TIERS } from "@/lib/stripe";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
-async function verifyBillingAccess() {
+async function verifyBillingAccess(options?: { requireManageRole?: boolean }) {
+  const requireManageRole = options?.requireManageRole ?? true;
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) {
-    throw new Error("Unauthorized");
+    redirect("/login");
   }
 
-  // Get active organization membership
-  const { data: member } = await supabase
-    .from("organization_members")
-    .select("organization_id, role, is_active")
-    .eq("user_id", user.id)
-    .eq("is_active", true)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .single();
+  const context = await getActiveWorkspaceContext();
+  if (!context || !context.activeOrg) {
+    redirect("/onboarding");
+  }
 
-  if (!member || !["owner", "admin", "billing"].includes(member.role)) {
+  if (requireManageRole && !["owner", "admin", "billing"].includes(context.role)) {
     throw new Error("Only organization owners, admins, and billing managers can manage billing.");
   }
 
-  return { user, orgId: member.organization_id, role: member.role };
+  return { user, orgId: context.activeOrg.id, role: context.role };
 }
 
 export async function getBillingDetails() {
-  const { orgId } = await verifyBillingAccess();
+  const { orgId } = await verifyBillingAccess({ requireManageRole: false });
   const entitlements = await getOrgEntitlements(orgId);
 
   const supabase = await createClient();

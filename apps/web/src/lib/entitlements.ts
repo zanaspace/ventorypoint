@@ -50,7 +50,7 @@ export async function getOrgEntitlements(organizationId: string): Promise<OrgEnt
   let clientCount = 0;
   try {
     const { count } = await supabase
-      .from("clients")
+      .from("client_accounts")
       .select("id", { count: "exact", head: true })
       .eq("organization_id", organizationId);
     clientCount = count ?? 0;

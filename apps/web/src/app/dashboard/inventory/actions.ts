@@ -1071,14 +1071,18 @@ export async function createContainerAction(payload: {
     return { success: false, error: "Please select a specific facility to provision an LPN." };
   }
 
-  // Get user org
-  const { data: member } = await supabase
-    .from("organization_members")
+  // Resolve organization_id from the target facility or active workspace
+  const { data: fac } = await supabase
+    .from("facilities")
     .select("organization_id")
-    .eq("user_id", user?.id)
-    .single();
+    .eq("id", payload.facilityId)
+    .maybeSingle();
 
-  const orgId = member?.organization_id;
+  let orgId = fac?.organization_id;
+  if (!orgId) {
+    const context = await getActiveWorkspaceContext();
+    orgId = context?.activeOrg?.id;
+  }
 
   // Resolve location code or barcode to UUID if provided
   let locationId: string | null = null;
