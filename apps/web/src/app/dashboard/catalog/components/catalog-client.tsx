@@ -10,6 +10,7 @@ import { BatchCreateSkuModal } from "./batch-create-sku-modal";
 import { EditSkuModal } from "./edit-sku-modal";
 import { ImportCatalogModal } from "./import-catalog-modal";
 import { BarcodeLookupModal } from "./barcode-lookup-modal";
+import { CatalogHelpTooltip } from "./catalog-help-tooltip";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { ActionDropdown } from "@/components/ui/action-dropdown";
 import { TablePagination } from "@/components/ui/table-pagination";
@@ -230,6 +231,7 @@ export function CatalogClient({
               >
                 <ScanLine className="w-4 h-4 text-brand shrink-0" />
                 <span>Lookup</span>
+                <CatalogHelpTooltip guideKey="barcode_lookup" />
               </button>
 
               <button
@@ -239,6 +241,7 @@ export function CatalogClient({
               >
                 <FileUp className="w-4 h-4 shrink-0" />
                 <span>Import</span>
+                <CatalogHelpTooltip guideKey="import_csv" />
               </button>
 
               <button
@@ -249,6 +252,7 @@ export function CatalogClient({
               >
                 <Download className="w-4 h-4 shrink-0" />
                 <span>Export</span>
+                <CatalogHelpTooltip guideKey="export_csv" />
               </button>
             </div>
 

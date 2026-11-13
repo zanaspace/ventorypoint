@@ -20,6 +20,7 @@ import {
   getFacilityLocationsAction,
   FacilityLocationOption,
 } from "@/app/dashboard/inventory/actions";
+import { CatalogHelpTooltip } from "./catalog-help-tooltip";
 
 interface EditSkuModalProps {
   isOpen: boolean;
@@ -239,7 +240,8 @@ export function EditSkuModal({
             }`}
           >
             <Package className="w-3.5 h-3.5" />
-            General & Stock Intake
+            <span>General & Stock Intake</span>
+            <CatalogHelpTooltip guideKey="general_tab" />
           </button>
           <button
             type="button"
@@ -251,10 +253,11 @@ export function EditSkuModal({
             }`}
           >
             <Sliders className="w-3.5 h-3.5" />
-            Advanced Specs
+            <span>Advanced Specs</span>
             <span className="text-[10px] font-normal text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
               Optional
             </span>
+            <CatalogHelpTooltip guideKey="advanced_tab" />
           </button>
         </div>
 
@@ -264,7 +267,10 @@ export function EditSkuModal({
             {/* SKU Code & Status */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-semibold text-foreground">SKU Code (Read-Only)</label>
+                <label className="text-xs font-semibold text-foreground inline-flex items-center gap-1.5">
+                  <span>SKU Code (Read-Only)</span>
+                  <CatalogHelpTooltip guideKey="sku_code" />
+                </label>
                 <input
                   disabled
                   value={sku.code}
@@ -273,7 +279,10 @@ export function EditSkuModal({
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-foreground">Catalog Status</label>
+                <label className="text-xs font-semibold text-foreground inline-flex items-center gap-1.5">
+                  <span>Catalog Status</span>
+                  <CatalogHelpTooltip guideKey="catalog_status" />
+                </label>
                 <div className="mt-1">
                   <SearchableSelect
                     value={status}
@@ -290,7 +299,10 @@ export function EditSkuModal({
 
             {/* Product Title */}
             <div>
-              <label className="text-xs font-semibold text-foreground">Product Title / Name *</label>
+              <label className="text-xs font-semibold text-foreground inline-flex items-center gap-1.5">
+                <span>Product Title / Name *</span>
+                <CatalogHelpTooltip guideKey="product_title" />
+              </label>
               <input
                 required
                 value={name}
@@ -302,7 +314,10 @@ export function EditSkuModal({
             {/* Barcode & Format */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="sm:col-span-2">
-                <label className="text-xs font-semibold text-foreground">Primary Barcode (Each)</label>
+                <label className="text-xs font-semibold text-foreground inline-flex items-center gap-1.5">
+                  <span>Primary Barcode (Each)</span>
+                  <CatalogHelpTooltip guideKey="barcode_upc" />
+                </label>
                 <div className="relative mt-1">
                   <Barcode className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                   <input
@@ -315,7 +330,10 @@ export function EditSkuModal({
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-foreground">Barcode Format</label>
+                <label className="text-xs font-semibold text-foreground inline-flex items-center gap-1.5">
+                  <span>Barcode Format</span>
+                  <CatalogHelpTooltip guideKey="barcode_format" />
+                </label>
                 <div className="mt-1">
                   <SearchableSelect
                     value={barcodeType}
@@ -334,7 +352,10 @@ export function EditSkuModal({
             {/* Tracking Class & Rotation Rule */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
               <div>
-                <label className="text-xs font-semibold text-foreground">Tracking Class</label>
+                <label className="text-xs font-semibold text-foreground inline-flex items-center gap-1.5">
+                  <span>Tracking Class</span>
+                  <CatalogHelpTooltip guideKey="tracking_class" />
+                </label>
                 <div className="mt-1">
                   <SearchableSelect
                     value={trackingClass}
@@ -350,7 +371,10 @@ export function EditSkuModal({
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-foreground">Rotation Rule</label>
+                <label className="text-xs font-semibold text-foreground inline-flex items-center gap-1.5">
+                  <span>Rotation Rule</span>
+                  <CatalogHelpTooltip guideKey="rotation_rule" />
+                </label>
                 <div className="mt-1">
                   <SearchableSelect
                     value={rotationRule}
@@ -377,7 +401,8 @@ export function EditSkuModal({
                     onChange={(e) => setExpiryRequired(e.target.checked)}
                     className="rounded border-border text-primary focus:ring-primary cursor-pointer"
                   />
-                  Expiry Date Required at Receipt
+                  <span>Expiry Date Required at Receipt</span>
+                  <CatalogHelpTooltip guideKey="expiry_required" />
                 </label>
                 {rotationRule === "fefo" && (
                   <span className="text-[10px] text-primary font-bold uppercase tracking-wide">
