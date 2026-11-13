@@ -171,7 +171,7 @@ export function CatalogClient({
             </div>
           </div>
 
-          <div className="grid grid-cols-4 gap-2 text-center text-xs shrink-0 w-full md:w-auto">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs shrink-0 w-full md:w-auto">
             <div className="p-2 rounded-lg bg-background border border-border">
               <span className="text-[10px] uppercase font-semibold text-muted-foreground block">Barcodes</span>
               <span className="font-mono font-bold text-foreground text-xs mt-0.5 block">
@@ -201,26 +201,11 @@ export function CatalogClient({
       )}
 
       {/* Control Bar: Filters & Actions */}
-      <div className="flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-3">
-        {/* Left Side: Client Selector, Search, Filter Dropdowns */}
-        <div className="flex flex-wrap items-center gap-2.5 flex-1">
-          {/* Client Filter */}
-          <div className="w-52">
-            <SearchableSelect
-              value={selectedClientId}
-              onChange={(v) => {
-                setSelectedClientId(v);
-                setCurrentPage(1);
-              }}
-              options={[
-                { value: "all", label: "All Brand Clients" },
-                ...clients.map((c) => ({ value: c.id, label: `${c.name} (${c.short_code})` })),
-              ]}
-            />
-          </div>
-
+      <div className="space-y-3">
+        {/* Top Row: Search + Action Buttons */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
           {/* Search Box */}
-          <div className="relative min-w-[200px] flex-1 max-w-xs">
+          <div className="relative flex-1 min-w-[200px]">
             <input
               type="text"
               value={searchQuery}
@@ -234,8 +219,79 @@ export function CatalogClient({
             <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
 
+          {/* Action Buttons */}
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 sm:pb-0 shrink-0">
+            <button
+              type="button"
+              onClick={() => setIsLookupOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-md border border-input hover:bg-accent transition-colors cursor-pointer whitespace-nowrap"
+            >
+              <ScanLine className="w-4 h-4 text-brand" />
+              <span>Lookup</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsImportOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-md border border-input hover:bg-accent transition-colors cursor-pointer whitespace-nowrap"
+            >
+              <FileUp className="w-4 h-4" />
+              <span>Import</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleExportCsv}
+              disabled={filteredSkus.length === 0}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-md border border-input hover:bg-accent transition-colors disabled:opacity-40 cursor-pointer whitespace-nowrap"
+            >
+              <Download className="w-4 h-4" />
+              <span>Export</span>
+            </button>
+
+            <ActionDropdown
+              variant="primary"
+              triggerText="Add Product"
+              triggerIcon={<Plus className="w-4 h-4" />}
+              align="end"
+              width={260}
+              actions={[
+                {
+                  label: "Add Single Product",
+                  description: "Detailed form with tracking rules & barcode",
+                  icon: <Plus className="w-4 h-4 text-primary" />,
+                  onClick: () => setIsCreateOpen(true),
+                },
+                {
+                  label: "Add Multiple Products",
+                  description: "Fast multi-line entry in a single table",
+                  icon: <Layers className="w-4 h-4 text-primary" />,
+                  onClick: () => setIsBatchCreateOpen(true),
+                },
+              ]}
+            />
+          </div>
+        </div>
+
+        {/* Second Row: Dropdown Filters */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          {/* Client Filter */}
+          <div>
+            <SearchableSelect
+              value={selectedClientId}
+              onChange={(v) => {
+                setSelectedClientId(v);
+                setCurrentPage(1);
+              }}
+              options={[
+                { value: "all", label: "All Brand Clients" },
+                ...clients.map((c) => ({ value: c.id, label: `${c.name} (${c.short_code})` })),
+              ]}
+            />
+          </div>
+
           {/* Tracking Class Filter */}
-          <div className="w-36">
+          <div>
             <SearchableSelect
               value={selectedTracking}
               onChange={(v) => {
@@ -253,7 +309,7 @@ export function CatalogClient({
           </div>
 
           {/* Rotation Rule Filter */}
-          <div className="w-32">
+          <div>
             <SearchableSelect
               value={selectedRotation}
               onChange={(v) => {
@@ -269,67 +325,112 @@ export function CatalogClient({
             />
           </div>
         </div>
-
-        {/* Right Side: Action Buttons */}
-        <div className="flex items-center gap-2 justify-end shrink-0">
-          <button
-            type="button"
-            onClick={() => setIsLookupOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-md border border-input hover:bg-accent transition-colors cursor-pointer"
-          >
-            <ScanLine className="w-4 h-4 text-brand" />
-            Scan / Lookup
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setIsImportOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-md border border-input hover:bg-accent transition-colors cursor-pointer"
-          >
-            <FileUp className="w-4 h-4" />
-            Import CSV
-          </button>
-
-          <button
-            type="button"
-            onClick={handleExportCsv}
-            disabled={filteredSkus.length === 0}
-            className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-md border border-input hover:bg-accent transition-colors disabled:opacity-40 cursor-pointer"
-          >
-            <Download className="w-4 h-4" />
-            Export CSV
-          </button>
-
-          <ActionDropdown
-            variant="primary"
-            triggerText="Add Product"
-            triggerIcon={<Plus className="w-4 h-4" />}
-            align="end"
-            width={260}
-            actions={[
-              {
-                label: "Add Single Product",
-                description: "Detailed form with tracking rules & barcode",
-                icon: <Plus className="w-4 h-4 text-primary" />,
-                onClick: () => setIsCreateOpen(true),
-              },
-              {
-                label: "Add Multiple Products",
-                description: "Fast multi-line entry in a single table",
-                icon: <Layers className="w-4 h-4 text-primary" />,
-                onClick: () => setIsBatchCreateOpen(true),
-              },
-            ]}
-          />
-        </div>
       </div>
 
-      {/* Main Catalog Data Table */}
+      {/* Main Catalog View: Cards on Mobile, Table on Tablet/Desktop */}
       <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
+        {/* Mobile Card List View (< md) */}
+        <div className="block md:hidden divide-y divide-border">
+          {paginatedSkus.length === 0 ? (
+            <div className="p-8 text-center text-muted-foreground">
+              <Package className="w-8 h-8 mx-auto mb-2 opacity-40" />
+              <p className="font-semibold text-sm">No SKUs found</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {searchQuery ? "Try refining your search filter." : "Get started by adding your first product SKU."}
+              </p>
+            </div>
+          ) : (
+            paginatedSkus.map((sku) => {
+              const eachUom = sku.uoms?.find((u) => u.uom_level === "each");
+              const primaryBarcode = sku.barcodes?.find((b) => b.is_primary)?.barcode || sku.barcodes?.[0]?.barcode || "—";
+
+              return (
+                <div key={sku.id} className="p-4 space-y-3 hover:bg-muted/20 transition-colors">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="font-bold text-foreground text-sm leading-snug">{sku.name}</div>
+                      <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                        <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-muted text-foreground">
+                          {sku.code}
+                        </span>
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-brand/10 text-brand">
+                          {sku.client?.short_code || "CLIENT"}
+                        </span>
+                        {sku.status === "active" ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                            <CheckCircle2 className="w-3 h-3" /> Active
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground capitalize">
+                            {sku.status}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <ActionDropdown
+                      actions={[
+                        {
+                          label: "Edit SKU",
+                          icon: <Edit2 className="w-4 h-4" />,
+                          onClick: () => setEditingSku(sku),
+                        },
+                        {
+                          label: "Delete SKU",
+                          icon: <Trash2 className="w-4 h-4" />,
+                          danger: true,
+                          onClick: () => handleDelete(sku),
+                        },
+                      ]}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs pt-1 border-t border-border/50">
+                    <div>
+                      <span className="text-[10px] uppercase font-semibold text-muted-foreground block">Barcode</span>
+                      <span className="font-mono text-xs text-foreground font-medium truncate block">
+                        {primaryBarcode}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase font-semibold text-muted-foreground block">Tracking</span>
+                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-foreground capitalize mt-0.5">
+                        <Shield className="w-3 h-3 text-brand shrink-0" />
+                        {sku.tracking_class.replace(/_/g, " ")}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase font-semibold text-muted-foreground block">Rotation</span>
+                      <span
+                        className={`inline-flex items-center gap-1 text-[11px] font-semibold uppercase mt-0.5 ${
+                          sku.rotation_rule === "fefo"
+                            ? "text-amber-600 dark:text-amber-400"
+                            : "text-blue-600 dark:text-blue-400"
+                        }`}
+                      >
+                        <Clock className="w-3 h-3 shrink-0" />
+                        {sku.rotation_rule}
+                        {sku.expiry_required ? " (Exp)" : ""}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase font-semibold text-muted-foreground block">Weight & Dims</span>
+                      <span className="text-xs text-muted-foreground font-mono mt-0.5 block truncate">
+                        {eachUom?.weight_kg ? `${eachUom.weight_kg} kg` : "—"}
+                        {eachUom?.length_cm ? ` (${eachUom.length_cm}×${eachUom.width_cm}×${eachUom.height_cm})` : ""}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Tablet & Desktop Table View (>= md) */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full min-w-[850px] text-left text-xs border-collapse">
             <thead>
-              <tr className="border-b border-border bg-gray-50/75 dark:bg-white/[0.02] text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+              <tr className="border-b border-border bg-gray-50/75 dark:bg-white/[0.02] text-[11px] font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
                 <th className="px-5 py-3.5">Product Name & SKU</th>
                 <th className="px-5 py-3.5">Client Brand</th>
                 <th className="px-5 py-3.5">Primary Barcode</th>
@@ -368,19 +469,19 @@ export function CatalogClient({
                       </td>
 
                       {/* Client Brand */}
-                      <td className="px-5 py-3.5">
+                      <td className="px-5 py-3.5 whitespace-nowrap">
                         <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-brand/10 text-brand">
                           {sku.client?.short_code || "CLIENT"}
                         </span>
                       </td>
 
                       {/* Barcode */}
-                      <td className="px-5 py-3.5 font-mono text-xs text-foreground">
+                      <td className="px-5 py-3.5 font-mono text-xs text-foreground whitespace-nowrap">
                         {primaryBarcode}
                       </td>
 
                       {/* Tracking Class */}
-                      <td className="px-5 py-3.5">
+                      <td className="px-5 py-3.5 whitespace-nowrap">
                         <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-gray-100 dark:bg-white/5 text-foreground capitalize">
                           <Shield className="w-3 h-3 text-brand" />
                           {sku.tracking_class.replace(/_/g, " ")}
@@ -388,7 +489,7 @@ export function CatalogClient({
                       </td>
 
                       {/* Rotation Rule */}
-                      <td className="px-5 py-3.5">
+                      <td className="px-5 py-3.5 whitespace-nowrap">
                         <span
                           className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full uppercase ${
                             sku.rotation_rule === "fefo"
@@ -403,13 +504,13 @@ export function CatalogClient({
                       </td>
 
                       {/* Weight & Dims */}
-                      <td className="px-5 py-3.5 text-xs text-muted-foreground font-mono">
+                      <td className="px-5 py-3.5 text-xs text-muted-foreground font-mono whitespace-nowrap">
                         {eachUom?.weight_kg ? `${eachUom.weight_kg} kg` : "—"}
                         {eachUom?.length_cm ? ` (${eachUom.length_cm}×${eachUom.width_cm}×${eachUom.height_cm})` : ""}
                       </td>
 
                       {/* Status */}
-                      <td className="px-5 py-3.5">
+                      <td className="px-5 py-3.5 whitespace-nowrap">
                         {sku.status === "active" ? (
                           <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
                             <CheckCircle2 className="w-3.5 h-3.5" /> Active
@@ -422,7 +523,7 @@ export function CatalogClient({
                       </td>
 
                       {/* Action Dropdown */}
-                      <td className="px-5 py-3.5 text-right">
+                      <td className="px-5 py-3.5 text-right whitespace-nowrap">
                         <ActionDropdown
                           actions={[
                             {

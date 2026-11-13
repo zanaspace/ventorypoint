@@ -43,7 +43,7 @@ export default async function CatalogPage() {
   const { skus, total } = await getSkus({ page: 1, pageSize: 50 });
 
   return (
-    <div className="p-6 md:p-8 space-y-6">
+    <div className="space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground">

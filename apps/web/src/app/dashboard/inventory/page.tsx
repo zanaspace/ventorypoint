@@ -78,7 +78,7 @@ export default async function InventoryPage() {
   const skus = (skusRes?.data || []) as any[];
 
   return (
-    <div className="p-6 md:p-8">
+    <div>
       <InventoryClient
         initialFacilityId={activeFacilityId}
         facilities={facilities || []}

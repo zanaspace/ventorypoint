@@ -270,8 +270,8 @@ export function InventoryClient({
       {/* Header and Quick Actions Bar */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-2 border-b border-border">
         <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">Inventory Ledger</h1>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">Inventory Ledger</h1>
             <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-accent text-accent-foreground border border-accent-foreground/20">
               Live Physical Ledger
             </span>
@@ -281,9 +281,9 @@ export function InventoryClient({
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2.5 w-full lg:w-auto">
           {/* Facility Selector */}
-          <div className="w-56">
+          <div className="w-full sm:w-56">
             <SearchableSelect
               value={selectedFacilityId}
               onChange={(val) => setSelectedFacilityId(val)}
@@ -298,66 +298,69 @@ export function InventoryClient({
             />
           </div>
 
-          {/* Unified "Where Is It?" Search Button */}
-          <button
-            onClick={() => setIsWhereIsDrawerOpen(true)}
-            className="px-4 py-2 bg-primary text-primary-foreground hover:bg-primary-hover rounded-lg text-xs font-semibold shadow-xs flex items-center gap-2 transition-colors cursor-pointer"
-          >
-            <Search className="w-3.5 h-3.5 text-primary-foreground" />
-            <span>&ldquo;Where Is It?&rdquo; Scan</span>
-          </button>
+          {/* Quick Actions Mobile Grid (2-col on mobile, flex on tablet/desktop) */}
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto">
+            {/* Unified "Where Is It?" Search Button */}
+            <button
+              onClick={() => setIsWhereIsDrawerOpen(true)}
+              className="col-span-2 sm:col-auto px-4 py-2 bg-primary text-primary-foreground hover:bg-primary-hover rounded-lg text-xs font-semibold shadow-xs flex items-center justify-center gap-2 transition-colors cursor-pointer min-h-[38px]"
+            >
+              <Search className="w-3.5 h-3.5 text-primary-foreground" />
+              <span>&ldquo;Where Is It?&rdquo; Scan</span>
+            </button>
 
-          {/* Inbound Stock Intake */}
-          <button
-            onClick={() => setIsBatchReceiveOpen(true)}
-            className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer"
-          >
-            <Boxes className="w-3.5 h-3.5 text-white" />
-            <span>Inbound Receipt</span>
-          </button>
+            {/* Inbound Stock Intake */}
+            <button
+              onClick={() => setIsBatchReceiveOpen(true)}
+              className="col-span-1 sm:col-auto px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer min-h-[38px]"
+            >
+              <Boxes className="w-3.5 h-3.5 text-white" />
+              <span>Inbound Receipt</span>
+            </button>
 
-          {/* New Container LPN Button */}
-          <button
-            onClick={() => {
-              setContainerModalMode("create");
-              setSelectedContainer(null);
-              setIsContainerModalOpen(true);
-            }}
-            className="px-3.5 py-2 bg-surface hover:bg-muted text-foreground border border-border rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer"
-          >
-            <Plus className="w-3.5 h-3.5 text-primary" />
-            <span>New LPN</span>
-          </button>
+            {/* New Container LPN Button */}
+            <button
+              onClick={() => {
+                setContainerModalMode("create");
+                setSelectedContainer(null);
+                setIsContainerModalOpen(true);
+              }}
+              className="col-span-1 sm:col-auto px-3.5 py-2 bg-surface hover:bg-muted text-foreground border border-border rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer min-h-[38px]"
+            >
+              <Plus className="w-3.5 h-3.5 text-primary" />
+              <span>New LPN</span>
+            </button>
 
-          {/* Evaluate Expiry Button */}
-          <button
-            onClick={handleEvaluateExpiry}
-            disabled={isEvaluatingExpiry}
-            className="px-3 py-2 bg-surface hover:bg-muted text-muted-foreground hover:text-foreground border border-border rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 cursor-pointer"
-            title="Evaluate FEFO shelf-life rules and auto-segregate expired lots"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${isEvaluatingExpiry ? "animate-spin text-primary" : ""}`} />
-            <span>FEFO Expiry</span>
-          </button>
+            {/* Evaluate Expiry Button */}
+            <button
+              onClick={handleEvaluateExpiry}
+              disabled={isEvaluatingExpiry}
+              className="col-span-1 sm:col-auto px-3 py-2 bg-surface hover:bg-muted text-muted-foreground hover:text-foreground border border-border rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1.5 cursor-pointer min-h-[38px]"
+              title="Evaluate FEFO shelf-life rules and auto-segregate expired lots"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isEvaluatingExpiry ? "animate-spin text-primary" : ""}`} />
+              <span>FEFO Expiry</span>
+            </button>
 
-          {/* Reconcile Ledger Button */}
-          <button
-            onClick={handleRunReconciliation}
-            disabled={isReconciling}
-            className="px-3 py-2 bg-surface hover:bg-muted text-muted-foreground hover:text-foreground border border-border rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 cursor-pointer"
-            title="Verify live balances match complete event projection"
-          >
-            <FileCheck className={`w-3.5 h-3.5 ${isReconciling ? "animate-spin text-primary" : ""}`} />
-            <span>Reconcile</span>
-          </button>
+            {/* Reconcile Ledger Button */}
+            <button
+              onClick={handleRunReconciliation}
+              disabled={isReconciling}
+              className="col-span-1 sm:col-auto px-3 py-2 bg-surface hover:bg-muted text-muted-foreground hover:text-foreground border border-border rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1.5 cursor-pointer min-h-[38px]"
+              title="Verify live balances match complete event projection"
+            >
+              <FileCheck className={`w-3.5 h-3.5 ${isReconciling ? "animate-spin text-primary" : ""}`} />
+              <span>Reconcile</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Tabs Bar */}
-      <div className="flex border-b border-border overflow-x-auto scrollbar-hide gap-1">
+      {/* Tabs Bar with smooth horizontal swipe on touch devices */}
+      <div className="flex border-b border-border overflow-x-auto no-scrollbar gap-1 -mx-3 px-3 sm:mx-0 sm:px-0">
         <button
           onClick={() => setActiveTab("balances")}
-          className={`px-4 py-2.5 text-xs font-bold border-b-2 flex items-center gap-2 transition-all whitespace-nowrap ${
+          className={`px-4 py-2.5 text-xs font-bold border-b-2 flex items-center gap-2 transition-all whitespace-nowrap shrink-0 ${
             activeTab === "balances"
               ? "border-primary text-primary bg-accent/40"
               : "border-transparent text-muted-foreground hover:text-foreground"
@@ -372,7 +375,7 @@ export function InventoryClient({
 
         <button
           onClick={() => setActiveTab("containers")}
-          className={`px-4 py-2.5 text-xs font-bold border-b-2 flex items-center gap-2 transition-all whitespace-nowrap ${
+          className={`px-4 py-2.5 text-xs font-bold border-b-2 flex items-center gap-2 transition-all whitespace-nowrap shrink-0 ${
             activeTab === "containers"
               ? "border-primary text-primary bg-accent/40"
               : "border-transparent text-muted-foreground hover:text-foreground"
@@ -387,7 +390,7 @@ export function InventoryClient({
 
         <button
           onClick={() => setActiveTab("lots")}
-          className={`px-4 py-2.5 text-xs font-bold border-b-2 flex items-center gap-2 transition-all whitespace-nowrap ${
+          className={`px-4 py-2.5 text-xs font-bold border-b-2 flex items-center gap-2 transition-all whitespace-nowrap shrink-0 ${
             activeTab === "lots"
               ? "border-primary text-primary bg-accent/40"
               : "border-transparent text-muted-foreground hover:text-foreground"
@@ -402,7 +405,7 @@ export function InventoryClient({
 
         <button
           onClick={() => setActiveTab("serials")}
-          className={`px-4 py-2.5 text-xs font-bold border-b-2 flex items-center gap-2 transition-all whitespace-nowrap ${
+          className={`px-4 py-2.5 text-xs font-bold border-b-2 flex items-center gap-2 transition-all whitespace-nowrap shrink-0 ${
             activeTab === "serials"
               ? "border-primary text-primary bg-accent/40"
               : "border-transparent text-muted-foreground hover:text-foreground"
@@ -417,7 +420,7 @@ export function InventoryClient({
 
         <button
           onClick={() => setActiveTab("adjustments")}
-          className={`px-4 py-2.5 text-xs font-bold border-b-2 flex items-center gap-2 transition-all whitespace-nowrap ${
+          className={`px-4 py-2.5 text-xs font-bold border-b-2 flex items-center gap-2 transition-all whitespace-nowrap shrink-0 ${
             activeTab === "adjustments"
               ? "border-primary text-primary bg-accent/40"
               : "border-transparent text-muted-foreground hover:text-foreground"
@@ -436,7 +439,7 @@ export function InventoryClient({
 
         <button
           onClick={() => setActiveTab("transactions")}
-          className={`px-4 py-2.5 text-xs font-bold border-b-2 flex items-center gap-2 transition-all whitespace-nowrap ${
+          className={`px-4 py-2.5 text-xs font-bold border-b-2 flex items-center gap-2 transition-all whitespace-nowrap shrink-0 ${
             activeTab === "transactions"
               ? "border-primary text-primary bg-accent/40"
               : "border-transparent text-muted-foreground hover:text-foreground"
@@ -450,23 +453,25 @@ export function InventoryClient({
         </button>
       </div>
 
-      {/* Filter Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-surface border border-border">
-        <div className="flex items-center gap-2.5 flex-1 min-w-[280px]">
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Filter by SKU, Location, LPN, Lot or Serial..."
-              className="w-full pl-9 pr-4 py-1.5 bg-background border border-border rounded-lg text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 font-mono"
-            />
-          </div>
+      {/* Filter Bar: Responsive Stacking */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 p-3 rounded-xl bg-surface border border-border">
+        {/* Search Input - Full width on mobile */}
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Filter by SKU, Location, LPN, Lot, Serial..."
+            className="w-full pl-9 pr-4 py-2 bg-background border border-border rounded-lg text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 font-mono transition-all"
+          />
+        </div>
 
+        {/* Dropdowns Row - 2-col grid on mobile, flex on tablet/desktop */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-row items-center gap-2 w-full sm:w-auto">
           {activeTab === "balances" && (
             <>
-              <div className="w-40">
+              <div className="w-full sm:w-44">
                 <SearchableSelect
                   value={stockFilter}
                   onChange={(val) => setStockFilter(val as any)}
@@ -480,7 +485,7 @@ export function InventoryClient({
                 />
               </div>
 
-              <div className="w-36">
+              <div className="w-full sm:w-36">
                 <SearchableSelect
                   value={statusFilter}
                   onChange={(val) => setStatusFilter(val)}
@@ -499,7 +504,7 @@ export function InventoryClient({
             </>
           )}
 
-          <div className="w-48">
+          <div className="w-full sm:w-48">
             <SearchableSelect
               value={selectedClientId}
               onChange={(val) => setSelectedClientId(val)}
@@ -520,10 +525,148 @@ export function InventoryClient({
       {/* Tab 1: Balances by SKU & Location */}
       {activeTab === "balances" && (
         <div className="bg-surface border border-border rounded-2xl overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+          {/* Mobile Card List (< md) */}
+          <div className="block md:hidden divide-y divide-border">
+            {filteredBalances.length === 0 ? (
+              <div className="py-12 text-center text-muted-foreground space-y-2 px-4">
+                <Boxes className="w-8 h-8 mx-auto text-muted-foreground/60" />
+                <p className="font-semibold text-foreground text-sm">No inventory balances recorded</p>
+                <p className="text-xs">Inbound receiving or transfers will populate this live ledger.</p>
+              </div>
+            ) : (
+              filteredBalances.map((bal) => {
+                const statusColors: Record<string, string> = {
+                  available: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+                  allocated: "bg-blue-500/10 text-blue-600 border-blue-500/20",
+                  hold: "bg-amber-500/10 text-amber-600 border-amber-500/20",
+                  damaged: "bg-rose-500/10 text-rose-600 border-rose-500/20",
+                  expired: "bg-purple-500/10 text-purple-600 border-purple-500/20",
+                };
+
+                return (
+                  <div key={bal.id} className="p-4 space-y-3 hover:bg-muted/20 transition-colors">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="font-bold text-foreground text-sm leading-snug">{bal.sku?.name || "Unnamed Product"}</div>
+                        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                          <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-muted text-foreground">
+                            {bal.sku?.code}
+                          </span>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider ${statusColors[bal.status] || "bg-muted text-muted-foreground"}`}>
+                            {bal.status}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="text-right shrink-0">
+                        <div className="font-mono font-bold text-base text-foreground">
+                          {bal.on_hand_qty} <span className="text-[10px] text-muted-foreground font-normal">units</span>
+                        </div>
+                        {bal.allocated_qty > 0 && (
+                          <div className="text-[10px] text-blue-500 font-mono">({bal.allocated_qty} alloc)</div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-border/50">
+                      <div>
+                        <span className="text-[10px] uppercase font-semibold text-muted-foreground block">Location</span>
+                        <div className="flex items-center gap-1 font-mono font-semibold text-foreground text-xs mt-0.5">
+                          <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
+                          <span className="truncate">{bal.location?.full_code}</span>
+                        </div>
+                      </div>
+
+                      <div>
+                        <span className="text-[10px] uppercase font-semibold text-muted-foreground block">Container</span>
+                        <div className="font-mono text-xs mt-0.5 truncate">
+                          {bal.container ? (
+                            <span className="font-semibold text-foreground flex items-center gap-1">
+                              <Box className="w-3 h-3 text-primary shrink-0" />
+                              {bal.container.lpn}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground italic">Loose Units</span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="col-span-2">
+                        <span className="text-[10px] uppercase font-semibold text-muted-foreground block">Tracking</span>
+                        <div className="font-mono text-xs mt-0.5">
+                          {bal.lot ? (
+                            <span className="text-foreground">
+                              Lot: <strong>{bal.lot.lot_number}</strong> {bal.lot.expiry_date ? `(Exp: ${bal.lot.expiry_date})` : ""}
+                            </span>
+                          ) : bal.serial ? (
+                            <span className="text-foreground">
+                              SN: <strong>{bal.serial.serial_number}</strong>
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">Non-Unique Product</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Mobile Action Row */}
+                    <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/40">
+                      <ActionDropdown
+                        triggerText="Actions"
+                        actions={[
+                          {
+                            label: "Relocate Stock",
+                            icon: <ArrowRightLeft className="w-4 h-4 text-primary" />,
+                            onClick: () => {
+                              setSelectedBalanceForMove(bal);
+                              setIsMoveModalOpen(true);
+                            },
+                          },
+                          {
+                            label: "Adjust Quantity",
+                            icon: <Sliders className="w-4 h-4 text-emerald-500" />,
+                            onClick: () => {
+                              setSelectedBalanceForAdjust(bal);
+                              setIsAdjustModalOpen(true);
+                            },
+                          },
+                          {
+                            label: "Change Status",
+                            icon: <ShieldAlert className="w-4 h-4 text-amber-500" />,
+                            onClick: () => {
+                              setSelectedBalanceForStatus(bal);
+                              setIsStatusModalOpen(true);
+                            },
+                          },
+                          {
+                            label: "View History",
+                            icon: <History className="w-4 h-4 text-purple-500" />,
+                            onClick: () => {
+                              if (bal.serial_id) {
+                                openTimeline("serial", bal.serial_id, `Serial: ${bal.serial?.serial_number}`);
+                              } else if (bal.lot_id) {
+                                openTimeline("lot", bal.lot_id, `Lot: ${bal.lot?.lot_number}`);
+                              } else if (bal.container_id) {
+                                openTimeline("container", bal.container_id, `LPN: ${bal.container?.lpn}`);
+                              } else {
+                                openTimeline("sku", bal.sku_id, `${bal.sku?.name || "SKU"}: ${bal.sku?.code}`);
+                              }
+                            },
+                          },
+                        ]}
+                      />
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Desktop & Tablet Table (>= md) */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full min-w-[850px] text-left border-collapse">
               <thead>
-                <tr className="border-b border-border bg-muted/20 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                <tr className="border-b border-border bg-muted/20 text-[11px] font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
                   <th className="py-3 px-4">Product Name & SKU</th>
                   <th className="py-3 px-4">Location Address</th>
                   <th className="py-3 px-4">Container (LPN)</th>
@@ -566,7 +709,7 @@ export function InventoryClient({
                         </td>
 
                         {/* Location */}
-                        <td className="py-3.5 px-4">
+                        <td className="py-3.5 px-4 whitespace-nowrap">
                           <div className="flex items-center gap-1.5 font-mono font-semibold text-foreground">
                             <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
                             <span>{bal.location?.full_code}</span>
@@ -577,7 +720,7 @@ export function InventoryClient({
                         </td>
 
                         {/* Container */}
-                        <td className="py-3.5 px-4 font-mono">
+                        <td className="py-3.5 px-4 font-mono whitespace-nowrap">
                           {bal.container ? (
                             <span className="px-2 py-0.5 rounded bg-muted/60 border border-border text-foreground font-semibold flex items-center gap-1.5 w-fit">
                               <Box className="w-3.5 h-3.5 text-primary" />
@@ -589,7 +732,7 @@ export function InventoryClient({
                         </td>
 
                         {/* Tracking (Lot / Serial) */}
-                        <td className="py-3.5 px-4">
+                        <td className="py-3.5 px-4 whitespace-nowrap">
                           {bal.lot ? (
                             <div className="font-mono text-xs">
                               <span className="text-muted-foreground">Lot: </span>
@@ -611,7 +754,7 @@ export function InventoryClient({
                         </td>
 
                         {/* Status */}
-                        <td className="py-3.5 px-4 text-center">
+                        <td className="py-3.5 px-4 text-center whitespace-nowrap">
                           <span
                             className={`px-2 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider ${
                               statusColors[bal.status] || "bg-muted text-muted-foreground"
@@ -622,7 +765,7 @@ export function InventoryClient({
                         </td>
 
                         {/* On-Hand Qty */}
-                        <td className="py-3.5 px-4 text-right">
+                        <td className="py-3.5 px-4 text-right whitespace-nowrap">
                           <div className="flex flex-col items-end">
                             <span
                               className={`font-mono font-bold text-sm ${
@@ -646,7 +789,7 @@ export function InventoryClient({
                         </td>
 
                         {/* Actions */}
-                        <td className="py-3.5 px-4 text-right">
+                        <td className="py-3.5 px-4 text-right whitespace-nowrap">
                           <ActionDropdown
                             triggerText="Actions"
                             actions={[
@@ -705,10 +848,90 @@ export function InventoryClient({
       {/* Tab 2: Containers / LPNs */}
       {activeTab === "containers" && (
         <div className="bg-surface border border-border rounded-2xl overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+          {/* Mobile Card List (< md) */}
+          <div className="block md:hidden divide-y divide-border">
+            {filteredContainers.length === 0 ? (
+              <div className="py-12 px-4 text-center text-muted-foreground space-y-2">
+                <Box className="w-8 h-8 mx-auto text-muted-foreground/60" />
+                <p className="font-semibold text-foreground text-sm">No license plates provisioned</p>
+                <p className="text-xs">Create pallet, case, or tote containers with &ldquo;New LPN&rdquo;.</p>
+              </div>
+            ) : (
+              filteredContainers.map((c) => (
+                <div key={c.id} className="p-4 space-y-2.5 hover:bg-muted/10 transition-colors">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Box className="w-4 h-4 text-primary shrink-0" />
+                      <span className="font-mono font-bold text-foreground text-sm">{c.lpn}</span>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 uppercase tracking-wider">
+                      {c.status}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">Type</span>
+                      <span className="capitalize font-medium text-foreground">{c.container_type}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">Parent LPN</span>
+                      <span className="font-mono text-muted-foreground text-xs">
+                        {c.parent_container ? c.parent_container.lpn : <em className="text-muted-foreground/70">Top-level</em>}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1 border-t border-border/50">
+                    <div className="flex items-center gap-1.5 font-mono text-xs text-foreground truncate max-w-[200px]">
+                      <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
+                      <span className="truncate">{c.location?.full_code || "Unassigned"}</span>
+                    </div>
+                    <ActionDropdown
+                      triggerText="Actions"
+                      actions={[
+                        {
+                          label: "Relocate Container",
+                          icon: <ArrowRightLeft className="w-4 h-4 text-primary" />,
+                          onClick: () => {
+                            setSelectedContainer(c);
+                            setContainerModalMode("move");
+                            setIsContainerModalOpen(true);
+                          },
+                        },
+                        {
+                          label: "Edit Details",
+                          icon: <Pencil className="w-4 h-4 text-muted-foreground" />,
+                          onClick: () => {
+                            setSelectedContainer(c);
+                            setContainerModalMode("edit");
+                            setIsContainerModalOpen(true);
+                          },
+                        },
+                        {
+                          label: "View History",
+                          icon: <History className="w-4 h-4 text-purple-500" />,
+                          onClick: () => openTimeline("container", c.id, `LPN: ${c.lpn}`),
+                        },
+                        {
+                          label: "Delete Container",
+                          icon: <Trash2 className="w-4 h-4" />,
+                          danger: true,
+                          onClick: () => handleDeleteContainer(c),
+                        },
+                      ]}
+                    />
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Desktop & Tablet Table (>= md) */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full min-w-[750px] text-left border-collapse">
               <thead>
-                <tr className="border-b border-border bg-muted/20 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                <tr className="border-b border-border bg-muted/20 text-[11px] font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
                   <th className="py-3 px-4">LPN Barcode</th>
                   <th className="py-3 px-4">Type</th>
                   <th className="py-3 px-4">Current Location</th>
@@ -729,16 +952,18 @@ export function InventoryClient({
                 ) : (
                   filteredContainers.map((c) => (
                     <tr key={c.id} className="hover:bg-muted/30 transition-colors">
-                      <td className="py-3.5 px-4 font-mono font-bold text-foreground text-sm flex items-center gap-2">
-                        <Box className="w-4 h-4 text-primary shrink-0" />
-                        <span>{c.lpn}</span>
+                      <td className="py-3.5 px-4 font-mono font-bold text-foreground text-sm whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <Box className="w-4 h-4 text-primary shrink-0" />
+                          <span>{c.lpn}</span>
+                        </div>
                       </td>
 
-                      <td className="py-3.5 px-4 capitalize font-medium text-foreground">
+                      <td className="py-3.5 px-4 capitalize font-medium text-foreground whitespace-nowrap">
                         {c.container_type}
                       </td>
 
-                      <td className="py-3.5 px-4">
+                      <td className="py-3.5 px-4 whitespace-nowrap">
                         <div className="font-mono text-xs font-semibold text-foreground">
                           {c.location?.full_code || "Unassigned"}
                         </div>
@@ -747,7 +972,7 @@ export function InventoryClient({
                         </div>
                       </td>
 
-                      <td className="py-3.5 px-4 font-mono text-xs">
+                      <td className="py-3.5 px-4 font-mono text-xs whitespace-nowrap">
                         {c.parent_container ? (
                           <span>{c.parent_container.lpn}</span>
                         ) : (
@@ -755,13 +980,13 @@ export function InventoryClient({
                         )}
                       </td>
 
-                      <td className="py-3.5 px-4 text-center">
+                      <td className="py-3.5 px-4 text-center whitespace-nowrap">
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 uppercase tracking-wider">
                           {c.status}
                         </span>
                       </td>
 
-                      <td className="py-3.5 px-4 text-right">
+                      <td className="py-3.5 px-4 text-right whitespace-nowrap">
                         <ActionDropdown
                           triggerText="Actions"
                           actions={[
@@ -809,10 +1034,66 @@ export function InventoryClient({
       {/* Tab 3: Lots & Expiry (FEFO) */}
       {activeTab === "lots" && (
         <div className="bg-surface border border-border rounded-2xl overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+          {/* Mobile Card List (< md) */}
+          <div className="block md:hidden divide-y divide-border">
+            {filteredLots.length === 0 ? (
+              <div className="py-12 px-4 text-center text-muted-foreground space-y-2">
+                <Calendar className="w-8 h-8 mx-auto text-muted-foreground/60" />
+                <p className="font-semibold text-foreground text-sm">No lot numbers recorded</p>
+                <p className="text-xs">Lot-controlled receipts will register lots and shelf-life dates here.</p>
+              </div>
+            ) : (
+              filteredLots.map((lot) => {
+                const expiryBadge = {
+                  ok: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+                  near_expiry: "bg-amber-500/10 text-amber-600 border-amber-500/20",
+                  expired: "bg-rose-500/10 text-rose-600 border-rose-500/20",
+                }[lot.expiry_status] || "bg-muted text-muted-foreground";
+
+                return (
+                  <div key={lot.id} className="p-4 space-y-2.5 hover:bg-muted/10 transition-colors">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <span className="font-mono font-bold text-foreground text-sm">
+                          {lot.lot_number}
+                        </span>
+                        <div className="text-xs font-semibold text-foreground mt-0.5">
+                          {lot.sku?.name || lot.sku?.code}
+                        </div>
+                        <div className="text-[11px] font-mono text-muted-foreground">
+                          SKU: {lot.sku?.code} · {lot.client?.name}
+                        </div>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider shrink-0 ${expiryBadge}`}>
+                        {lot.expiry_status.replace(/_/g, " ")}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1 border-t border-border/50 text-xs">
+                      <div className="flex items-center gap-1.5 text-muted-foreground font-mono">
+                        <Calendar className="w-3.5 h-3.5 text-primary shrink-0" />
+                        <span>Expiry: {lot.expiry_date || "None"}</span>
+                      </div>
+                      <button
+                        onClick={() => openTimeline("lot", lot.id, `Lot: ${lot.lot_number}`)}
+                        className="px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted transition-colors flex items-center gap-1 cursor-pointer"
+                        title="Lot History Timeline"
+                      >
+                        <History className="w-3.5 h-3.5 text-purple-500" />
+                        <span>History</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Desktop & Tablet Table (>= md) */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full min-w-[750px] text-left border-collapse">
               <thead>
-                <tr className="border-b border-border bg-muted/20 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                <tr className="border-b border-border bg-muted/20 text-[11px] font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
                   <th className="py-3 px-4">Lot Number</th>
                   <th className="py-3 px-4">SKU Code & Title</th>
                   <th className="py-3 px-4">Client</th>
@@ -840,30 +1121,30 @@ export function InventoryClient({
 
                     return (
                       <tr key={lot.id} className="hover:bg-muted/30 transition-colors">
-                        <td className="py-3.5 px-4 font-mono font-bold text-foreground text-sm">
+                        <td className="py-3.5 px-4 font-mono font-bold text-foreground text-sm whitespace-nowrap">
                           {lot.lot_number}
                         </td>
-                        <td className="py-3.5 px-4">
+                        <td className="py-3.5 px-4 whitespace-nowrap">
                           <span className="font-mono font-bold text-foreground">{lot.sku?.code}</span>
                           <span className="block text-xs text-muted-foreground">{lot.sku?.name}</span>
                         </td>
-                        <td className="py-3.5 px-4 font-medium text-foreground">
+                        <td className="py-3.5 px-4 font-medium text-foreground whitespace-nowrap">
                           {lot.client?.name}
                         </td>
-                        <td className="py-3.5 px-4 font-mono">
+                        <td className="py-3.5 px-4 font-mono whitespace-nowrap">
                           {lot.expiry_date || <span className="text-muted-foreground italic">None</span>}
                         </td>
-                        <td className="py-3.5 px-4 text-center">
+                        <td className="py-3.5 px-4 text-center whitespace-nowrap">
                           <span
                             className={`px-2 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider ${expiryBadge}`}
                           >
                             {lot.expiry_status.replace(/_/g, " ")}
                           </span>
                         </td>
-                        <td className="py-3.5 px-4 text-right">
+                        <td className="py-3.5 px-4 text-right whitespace-nowrap">
                           <button
                             onClick={() => openTimeline("lot", lot.id, `Lot: ${lot.lot_number}`)}
-                            className="p-1 text-muted-foreground hover:text-foreground rounded hover:bg-muted transition-colors"
+                            className="p-1 text-muted-foreground hover:text-foreground rounded hover:bg-muted transition-colors cursor-pointer"
                             title="Lot History Timeline"
                           >
                             <History className="w-3.5 h-3.5" />
@@ -882,10 +1163,62 @@ export function InventoryClient({
       {/* Tab 4: Unique Serials */}
       {activeTab === "serials" && (
         <div className="bg-surface border border-border rounded-2xl overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+          {/* Mobile Card List (< md) */}
+          <div className="block md:hidden divide-y divide-border">
+            {initialSerials.length === 0 ? (
+              <div className="py-12 px-4 text-center text-muted-foreground space-y-2">
+                <Barcode className="w-8 h-8 mx-auto text-muted-foreground/60" />
+                <p className="font-semibold text-foreground text-sm">No serialized units registered</p>
+                <p className="text-xs">Serialized product receipts will record individual unit identities here.</p>
+              </div>
+            ) : (
+              initialSerials.map((sr) => (
+                <div key={sr.id} className="p-4 space-y-2.5 hover:bg-muted/10 transition-colors">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Barcode className="w-4 h-4 text-purple-500 shrink-0" />
+                      <span className="font-mono font-bold text-foreground text-sm break-all">
+                        {sr.serial_number}
+                      </span>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 uppercase tracking-wider shrink-0">
+                      {sr.status}
+                    </span>
+                  </div>
+
+                  <div>
+                    <div className="font-semibold text-foreground text-xs">{sr.sku?.name || "Unnamed Product"}</div>
+                    <div className="font-mono text-[11px] text-muted-foreground mt-0.5">
+                      SKU: {sr.sku?.code}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-border/50 text-xs">
+                    <div className="flex items-center gap-1.5 font-mono text-muted-foreground">
+                      <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
+                      <span className="text-foreground font-semibold">{sr.location?.full_code || "Unassigned"}</span>
+                      {sr.container && (
+                        <span className="text-muted-foreground">· LPN: {sr.container.lpn}</span>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => openTimeline("serial", sr.id, `Serial: ${sr.serial_number}`)}
+                      className="px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted transition-colors flex items-center gap-1 ml-auto cursor-pointer"
+                    >
+                      <History className="w-3.5 h-3.5 text-purple-500" />
+                      <span>History</span>
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Desktop & Tablet Table (>= md) */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full min-w-[800px] text-left border-collapse">
               <thead>
-                <tr className="border-b border-border bg-muted/20 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                <tr className="border-b border-border bg-muted/20 text-[11px] font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
                   <th className="py-3 px-4">Serial / Unique ID</th>
                   <th className="py-3 px-4">SKU</th>
                   <th className="py-3 px-4">Current Location</th>
@@ -906,29 +1239,31 @@ export function InventoryClient({
                 ) : (
                   initialSerials.map((sr) => (
                     <tr key={sr.id} className="hover:bg-muted/30 transition-colors">
-                      <td className="py-3.5 px-4 font-mono font-bold text-foreground text-sm flex items-center gap-2">
-                        <Barcode className="w-4 h-4 text-purple-500 shrink-0" />
-                        <span>{sr.serial_number}</span>
+                      <td className="py-3.5 px-4 font-mono font-bold text-foreground text-sm whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <Barcode className="w-4 h-4 text-purple-500 shrink-0" />
+                          <span>{sr.serial_number}</span>
+                        </div>
                       </td>
-                      <td className="py-3.5 px-4">
+                      <td className="py-3.5 px-4 whitespace-nowrap">
                         <div className="font-semibold text-foreground text-xs">{sr.sku?.name || "Unnamed Product"}</div>
                         <div className="font-mono text-[11px] text-muted-foreground/60 mt-0.5 flex items-center gap-1">
                           <span className="text-[10px] text-muted-foreground/50">SKU:</span>
                           <span className="font-normal text-muted-foreground/80">{sr.sku?.code}</span>
                         </div>
                       </td>
-                      <td className="py-3.5 px-4 font-mono text-xs">
+                      <td className="py-3.5 px-4 font-mono text-xs whitespace-nowrap">
                         {sr.location?.full_code || <span className="text-muted-foreground italic">Unassigned</span>}
                       </td>
-                      <td className="py-3.5 px-4 font-mono text-xs">
+                      <td className="py-3.5 px-4 font-mono text-xs whitespace-nowrap">
                         {sr.container?.lpn || <span className="text-muted-foreground italic">Loose</span>}
                       </td>
-                      <td className="py-3.5 px-4 text-center">
+                      <td className="py-3.5 px-4 text-center whitespace-nowrap">
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 uppercase tracking-wider">
                           {sr.status}
                         </span>
                       </td>
-                      <td className="py-3.5 px-4 text-right">
+                      <td className="py-3.5 px-4 text-right whitespace-nowrap">
                         <ActionDropdown
                           triggerText="Actions"
                           actions={[
@@ -952,10 +1287,84 @@ export function InventoryClient({
       {/* Tab 5: Supervisor Approval Queue */}
       {activeTab === "adjustments" && (
         <div className="bg-surface border border-border rounded-2xl overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+          {/* Mobile Card List (< md) */}
+          <div className="block md:hidden divide-y divide-border">
+            {initialAdjustments.length === 0 ? (
+              <div className="py-12 px-4 text-center text-muted-foreground space-y-2">
+                <FileCheck className="w-8 h-8 mx-auto text-muted-foreground/60" />
+                <p className="font-semibold text-foreground text-sm">Approval queue is empty</p>
+                <p className="text-xs">Any physical count adjustments exceeding 10 units will appear here for review.</p>
+              </div>
+            ) : (
+              initialAdjustments.map((adj) => (
+                <div key={adj.id} className="p-4 space-y-3 hover:bg-muted/10 transition-colors">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <span className="font-mono font-bold text-foreground text-sm">{adj.sku?.code}</span>
+                      <span className="block text-xs font-mono text-muted-foreground mt-0.5">{adj.location?.full_code}</span>
+                    </div>
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider shrink-0 ${
+                        adj.approval_status === "pending"
+                          ? "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                          : adj.approval_status === "approved"
+                          ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                          : "bg-rose-500/10 text-rose-600 border-rose-500/20"
+                      }`}
+                    >
+                      {adj.approval_status}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 p-2 rounded-lg bg-background border border-border text-center font-mono">
+                    <div>
+                      <span className="text-[10px] font-sans font-bold uppercase text-muted-foreground block">Current</span>
+                      <span className="text-xs font-bold text-foreground">{adj.current_qty}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-sans font-bold uppercase text-muted-foreground block">Delta</span>
+                      <span className={`text-xs font-bold ${adj.quantity_delta > 0 ? "text-emerald-500" : "text-rose-500"}`}>
+                        {adj.quantity_delta > 0 ? `+${adj.quantity_delta}` : adj.quantity_delta}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-sans font-bold uppercase text-muted-foreground block">Target</span>
+                      <span className="text-xs font-bold text-foreground">{adj.target_qty}</span>
+                    </div>
+                  </div>
+
+                  <div className="text-xs space-y-1">
+                    <span className="font-semibold text-foreground block capitalize">
+                      {adj.reason_code.replace(/_/g, " ")}
+                    </span>
+                    {adj.notes && <span className="text-muted-foreground block italic text-[11px]">&ldquo;{adj.notes}&rdquo;</span>}
+                  </div>
+
+                  <div className="pt-2 border-t border-border/50 flex justify-end">
+                    {adj.approval_status === "pending" ? (
+                      <button
+                        onClick={() => {
+                          setSelectedAdjustment(adj);
+                          setIsApprovalModalOpen(true);
+                        }}
+                        className="w-full sm:w-auto px-4 py-2 bg-primary text-primary-foreground text-xs font-bold rounded-lg hover:bg-primary-hover transition-colors cursor-pointer"
+                      >
+                        Review Adjustment
+                      </button>
+                    ) : (
+                      <span className="text-xs text-muted-foreground font-mono">Decision Completed</span>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Desktop & Tablet Table (>= md) */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full min-w-[800px] text-left border-collapse">
               <thead>
-                <tr className="border-b border-border bg-muted/20 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                <tr className="border-b border-border bg-muted/20 text-[11px] font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
                   <th className="py-3 px-4">SKU & Location</th>
                   <th className="py-3 px-4 text-center">Current Qty</th>
                   <th className="py-3 px-4 text-center">Proposed Delta</th>
@@ -977,33 +1386,33 @@ export function InventoryClient({
                 ) : (
                   initialAdjustments.map((adj) => (
                     <tr key={adj.id} className="hover:bg-muted/30 transition-colors">
-                      <td className="py-3.5 px-4">
+                      <td className="py-3.5 px-4 whitespace-nowrap">
                         <span className="font-mono font-bold text-foreground text-sm">{adj.sku?.code}</span>
                         <span className="block text-xs font-mono text-muted-foreground">{adj.location?.full_code}</span>
                       </td>
 
-                      <td className="py-3.5 px-4 text-center font-mono font-bold text-foreground">
+                      <td className="py-3.5 px-4 text-center font-mono font-bold text-foreground whitespace-nowrap">
                         {adj.current_qty}
                       </td>
 
-                      <td className="py-3.5 px-4 text-center font-mono font-bold">
+                      <td className="py-3.5 px-4 text-center font-mono font-bold whitespace-nowrap">
                         <span className={adj.quantity_delta > 0 ? "text-emerald-500" : "text-rose-500"}>
                           {adj.quantity_delta > 0 ? `+${adj.quantity_delta}` : adj.quantity_delta}
                         </span>
                       </td>
 
-                      <td className="py-3.5 px-4 text-center font-mono font-bold text-foreground">
+                      <td className="py-3.5 px-4 text-center font-mono font-bold text-foreground whitespace-nowrap">
                         {adj.target_qty}
                       </td>
 
                       <td className="py-3.5 px-4 max-w-xs">
-                        <span className="font-semibold text-foreground block capitalize">
+                        <span className="font-semibold text-foreground block capitalize whitespace-nowrap">
                           {adj.reason_code.replace(/_/g, " ")}
                         </span>
                         {adj.notes && <span className="text-muted-foreground truncate block italic">{adj.notes}</span>}
                       </td>
 
-                      <td className="py-3.5 px-4 text-center">
+                      <td className="py-3.5 px-4 text-center whitespace-nowrap">
                         <span
                           className={`px-2 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider ${
                             adj.approval_status === "pending"
@@ -1017,14 +1426,14 @@ export function InventoryClient({
                         </span>
                       </td>
 
-                      <td className="py-3.5 px-4 text-right">
+                      <td className="py-3.5 px-4 text-right whitespace-nowrap">
                         {adj.approval_status === "pending" ? (
                           <button
                             onClick={() => {
                               setSelectedAdjustment(adj);
                               setIsApprovalModalOpen(true);
                             }}
-                            className="px-3 py-1 bg-primary text-primary-foreground text-xs font-bold rounded-lg hover:bg-primary-hover transition-colors"
+                            className="px-3 py-1 bg-primary text-primary-foreground text-xs font-bold rounded-lg hover:bg-primary-hover transition-colors cursor-pointer"
                           >
                             Review
                           </button>
@@ -1044,10 +1453,59 @@ export function InventoryClient({
       {/* Tab 6: Transaction History */}
       {activeTab === "transactions" && (
         <div className="bg-surface border border-border rounded-2xl overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+          {/* Mobile Card List (< md) */}
+          <div className="block md:hidden divide-y divide-border">
+            {initialTransactions.length === 0 ? (
+              <div className="py-12 px-4 text-center text-muted-foreground space-y-2">
+                <History className="w-8 h-8 mx-auto text-muted-foreground/60" />
+                <p className="font-semibold text-foreground text-sm">No ledger transactions</p>
+                <p className="text-xs">All movements, adjustments, and receipts generate immutable transaction lines.</p>
+              </div>
+            ) : (
+              initialTransactions.map((tx) => (
+                <div key={tx.id} className="p-4 space-y-2 hover:bg-muted/10 transition-colors">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold border uppercase tracking-wider bg-muted text-foreground">
+                      {tx.transaction_type.replace(/_/g, " ")}
+                    </span>
+                    <span className={`font-mono font-bold text-sm ${tx.quantity > 0 ? "text-emerald-500" : "text-foreground"}`}>
+                      {tx.quantity > 0 ? `+${tx.quantity}` : tx.quantity}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2 text-xs">
+                    <span className="font-mono font-bold text-foreground">{tx.sku?.code}</span>
+                    <span className="font-mono text-[10px] text-muted-foreground">
+                      {new Date(tx.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · {new Date(tx.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 font-mono text-xs pt-1 border-t border-border/50">
+                    <span className="text-muted-foreground">
+                      {tx.from_location?.full_code || "Inbound"}
+                    </span>
+                    <span className="text-muted-foreground">→</span>
+                    <span className="text-primary font-bold">
+                      {tx.to_location?.full_code || "Outbound"}
+                    </span>
+                  </div>
+
+                  {(tx.reason_code || tx.notes) && (
+                    <div className="text-[11px] text-muted-foreground pt-1">
+                      {tx.reason_code && <span className="capitalize font-medium text-foreground mr-1.5">{tx.reason_code.replace(/_/g, " ")}</span>}
+                      {tx.notes && <span className="italic truncate block">&ldquo;{tx.notes}&rdquo;</span>}
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Desktop & Tablet Table (>= md) */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full min-w-[850px] text-left border-collapse">
               <thead>
-                <tr className="border-b border-border bg-muted/20 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                <tr className="border-b border-border bg-muted/20 text-[11px] font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
                   <th className="py-3 px-4">Timestamp</th>
                   <th className="py-3 px-4">Type</th>
                   <th className="py-3 px-4">SKU Code</th>
@@ -1072,17 +1530,17 @@ export function InventoryClient({
                         {new Date(tx.created_at).toLocaleString()}
                       </td>
 
-                      <td className="py-3.5 px-4">
+                      <td className="py-3.5 px-4 whitespace-nowrap">
                         <span className="px-2 py-0.5 rounded text-[10px] font-bold border uppercase tracking-wider bg-muted text-foreground">
                           {tx.transaction_type.replace(/_/g, " ")}
                         </span>
                       </td>
 
-                      <td className="py-3.5 px-4 font-mono font-bold text-foreground">
+                      <td className="py-3.5 px-4 font-mono font-bold text-foreground whitespace-nowrap">
                         {tx.sku?.code}
                       </td>
 
-                      <td className="py-3.5 px-4 font-mono text-xs">
+                      <td className="py-3.5 px-4 font-mono text-xs whitespace-nowrap">
                         <div className="flex items-center gap-1.5">
                           <span className="text-muted-foreground">
                             {tx.from_location?.full_code || "Inbound"}
@@ -1094,7 +1552,7 @@ export function InventoryClient({
                         </div>
                       </td>
 
-                      <td className="py-3.5 px-4 text-right font-mono font-bold text-foreground">
+                      <td className="py-3.5 px-4 text-right font-mono font-bold text-foreground whitespace-nowrap">
                         {tx.quantity > 0 ? `+${tx.quantity}` : tx.quantity}
                       </td>
 

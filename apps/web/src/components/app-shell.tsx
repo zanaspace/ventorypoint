@@ -324,7 +324,7 @@ export function AppShell({ children, context }: AppShellProps) {
         <AnnouncementBanner organizationId={context?.activeOrg?.id} />
 
         {/* Scrollable Page Content */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-surface p-4 md:p-6 lg:p-8">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-surface p-3.5 sm:p-5 md:p-6 lg:p-8">
           {children}
         </main>
       </div>
